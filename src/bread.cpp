@@ -185,7 +185,7 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
                     m_voxels[idx] = 0;
                     count++;
                 } else {
-                    // m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
+                    m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
                 }
             }
         }
