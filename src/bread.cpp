@@ -73,6 +73,16 @@ void Bread::init() {
 
     file.close();
 
+    int x, y, z;
+    voxelToIndices(200, x, y, z);
+    std::cout << "x: " << x << std::endl;
+    std::cout << "y: " << y << std::endl;
+    std::cout << "z: " << z << std::endl;
+
+    int i;
+    indicesToVoxel(x, y, z, i);
+    std::cout << "i: " << i << std::endl;
+
     distanceVoxels();
 
     cout << "done!" << endl;
@@ -109,6 +119,12 @@ void Bread::voxelToIndices(int index, int &x, int &y, int &z) {
     y = index - z * dimZ;
 }
 
+void Bread::indicesToVoxel(int x, int y, int z, int &index) {
+    index = y;
+    index += z * dimZ;
+    index += x * dimX * dimZ;
+}
+
 void Bread::voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ) {
     worldX = (x - 0.5f) / dimX;
     worldY = (y + 0.5f) / dimY;
@@ -120,4 +136,16 @@ void Bread::voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worl
 
 bool Bread::voxelAt(int x, int y, int z) {
     return m_voxels[x * dimX * dimZ + z * dimZ + y];
+}
+
+void Bread::generateBubble(int x, int y, int z, int bubbleRadius) {
+    // get bounding box of size 2R + 1 in each dimension and store in vector
+    // iterate through vector and check distance; if distance is < radius, set voxel == 0
+    std::vector<float> boundingBox;
+    int boundingBoxWidth = 2 * bubbleRadius + 1;
+    boundingBox.assign(pow(boundingBoxWidth, 3), 0);
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+    }
 }
