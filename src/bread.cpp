@@ -79,8 +79,6 @@ void Bread::init() {
 
     fillIn();
 
-    writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
-
 
 
     int x, y, z;
@@ -94,11 +92,11 @@ void Bread::init() {
     std::cout << "i: " << i << std::endl;
 
     generateSphere(0, 0, 0, 2);
-    generateBubbles(2, 20);
+    generateBubbles(1, 5);
 
+    writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-
-    distanceVoxels();
+    // distanceVoxels();
 
     cout << "done!" << endl;
 }
@@ -189,7 +187,7 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
                     m_voxels[idx] = 0;
                     count++;
                 } else {
-                    m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
+                    // m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
                 }
             }
         }
@@ -225,20 +223,32 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
 void Bread::fillIn() {
     for (int x = 0; x < dimX; x++) {
         for (int y = 0; y < dimY; y++) {
+
             int state = 0;
+            int startZ = -1;
             for (int z = 0; z < dimZ; z++) {
                 if (state == 0) {
                     if (voxelAt(x, y, z)) {
                         state = 1;
+                        startZ = z;
                     }
                 } else {
                     if (voxelAt(x, y, z)) {
                         state = 0;
-                    } else {
-                        int index;
-                        indicesToVoxel(x, y, z, index);
-                        m_voxels[index] = 1;
+                        if (startZ + 1 < z) {
+                            for (int w = startZ + 1; w < z; w++) {
+                                int index;
+                                indicesToVoxel(x, y, z, index);
+                                m_voxels[index] = 1;
+                                // cout << "fillig in" << endl;
+                            }
+                        }
                     }
+                    // else {
+                    //     int index;
+                    //     indicesToVoxel(x, y, z, index);
+                    //     m_voxels[index] = 1;
+                    // }
                 }
             }
         }
