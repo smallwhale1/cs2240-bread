@@ -209,3 +209,27 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
         radius++;
     }
 }
+
+void Bread::fillIn() {
+    for (int x = 0; x < dimX; x++) {
+        for (int y = 0; y < dimY; y++) {
+            int state = 0;
+            for (int z = 0; z < dimZ; z++) {
+                if (state == 0) {
+                    if (voxelAt(x, y, z)) {
+                        state = 1;
+                    }
+                }
+                if (state == 1) {
+                    if (voxelAt(x, y, z)) {
+                        state = 0;
+                    } else {
+                        int index;
+                        indicesToVoxel(x, y, z, index);
+                        m_voxels[index] = 1;
+                    }
+                }
+            }
+        }
+    }
+}
