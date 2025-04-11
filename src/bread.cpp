@@ -57,19 +57,24 @@ void Bread::init() {
     m_voxels.resize(numVoxels);
     // std::vector<bool> voxels(numVoxels);
 
-    // populate voxels
-    char val;
+    file.ignore(1);
+
+    // parse data
+    unsigned char value = 0;
+    unsigned char count = 0;
     int index = 0;
-    while (file.read(reinterpret_cast<char*>(&val), 1)) {
-        for (int i = 0; i < 8; ++i) {
-            if (index < numVoxels) {
-                m_voxels[index++] = (val >> i) & 1;
-            }
+
+    while (file.read(reinterpret_cast<char*>(&value), 1) &&
+           file.read(reinterpret_cast<char*>(&count), 1)) {
+
+        for (int i = 0; i < count; ++i) {
+            m_voxels[index++] = (value != 0);
         }
     }
 
-    // cout << voxels[0] << endl;
-    cout << "Num voxels: " << numVoxels << endl;
+    // if (index != numVoxels) {
+    //     cout << "not matched" << endl;
+    // }
 
     file.close();
 
