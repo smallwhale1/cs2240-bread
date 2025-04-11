@@ -92,6 +92,20 @@ void Bread::init() {
     generateSphere(0, 0, 0, 2);
     generateBubbles(1, 5);
 
+    // do cross section
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (x < 24) {
+            // cout << "hi" << endl;
+            // set to 0
+            m_voxels[i] = 0;
+        }
+    }
+
     writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     // distanceVoxels();
@@ -107,6 +121,9 @@ void Bread::distanceVoxels() {
         } else {
             int x, y, z;
             voxelToIndices(i, x, y, z);
+            // cout << "x: " << x << endl;
+            // cout << "y: " << y << endl;
+            // cout << "z: " << z << endl;
             float minDistance = dimX * dimY * dimZ;
             for (int j = 0; j < m_voxels.size(); j++) {
                 if (i != j && !m_voxels[j]) {
@@ -124,10 +141,17 @@ void Bread::distanceVoxels() {
 }
 
 void Bread::voxelToIndices(int index, int &x, int &y, int &z) {
-    x = index % (dimX * dimZ);
-    index -= x * dimX * dimZ;
-    z = index % dimZ;
-    y = index - z * dimZ;
+    // x = index % (dimX * dimZ);
+    // index -= x * dimX * dimZ;
+    // z = index % dimZ;
+    // y = index - z * dimZ;
+
+    int a = dimX * dimY;
+    z = index / a;
+
+    int b = index - a * z;
+    y = b / dimX;
+    x = b % dimX;
 }
 
 void Bread::indicesToVoxel(int x, int y, int z, int &index) {
@@ -179,13 +203,14 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
                 }
 
                 float distance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
+                // m_voxels[idx] = 1;
 
                 // std::cout << distance << std::endl; // uncomment for checking that distance calculations are correct
                 if (distance <= radius) {
                     m_voxels[idx] = 0;
                     count++;
                 } else {
-                    m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
+                    // m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
                 }
             }
         }
@@ -199,7 +224,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 512; // resolution of proving vol in each spatial coordinate
+    int r = 64; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
