@@ -20,7 +20,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bun_weird.binvox";
+    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
