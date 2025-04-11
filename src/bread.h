@@ -22,6 +22,9 @@ private:
     void distanceVoxels();
     void voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ);
     void voxelToIndices(int index, int &x, int &y, int &z);
+    void indicesToVoxel(int x, int y, int z, int &index);
+    void generateSphere(int x, int y, int z, int radius);
+    void generateBubbles(int minRadius, int maxRadius);
 };
 
 #endif // BREAD_H
