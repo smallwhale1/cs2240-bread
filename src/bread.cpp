@@ -79,8 +79,6 @@ void Bread::init() {
 
     fillIn();
 
-
-
     int x, y, z;
     voxelToIndices(200, x, y, z);
     std::cout << "x: " << x << std::endl;
@@ -91,8 +89,8 @@ void Bread::init() {
     indicesToVoxel(x, y, z, i);
     std::cout << "i: " << i << std::endl;
 
-    generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 5);
+    // generateSphere(0, 0, 0, 2);
+    // generateBubbles(1, 5);
 
     writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
@@ -238,9 +236,13 @@ void Bread::fillIn() {
                         if (startZ + 1 < z) {
                             for (int w = startZ + 1; w < z; w++) {
                                 int index;
-                                indicesToVoxel(x, y, z, index);
+                                indicesToVoxel(x, y, w, index);
+                                bool zz = m_voxels[index];
+                                if (m_voxels[index] == 0) {
+                                   cout << "fillig in" << endl;
+                                }
                                 m_voxels[index] = 1;
-                                // cout << "fillig in" << endl;
+
                             }
                         }
                     }
