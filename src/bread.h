@@ -26,6 +26,7 @@ private:
     void generateSphere(int x, int y, int z, int radius);
     void generateBubbles(int minRadius, int maxRadius);
     void fillIn();
+    void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
 };
 
 #endif // BREAD_H
