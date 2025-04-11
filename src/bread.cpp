@@ -89,8 +89,8 @@ void Bread::init() {
     indicesToVoxel(x, y, z, i);
     std::cout << "i: " << i << std::endl;
 
-    // generateSphere(0, 0, 0, 2);
-    // generateBubbles(1, 5);
+    generateSphere(0, 0, 0, 2);
+    generateBubbles(1, 5);
 
     writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
