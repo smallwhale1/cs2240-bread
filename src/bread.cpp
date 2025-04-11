@@ -20,7 +20,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/cube.binvox";
+    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -57,15 +57,13 @@ void Bread::init() {
     m_voxels.resize(numVoxels);
     // std::vector<bool> voxels(numVoxels);
 
-    file.ignore(1);
-
     // parse data
     unsigned char value = 0;
     unsigned char count = 0;
     int index = 0;
 
-    while (file.read(reinterpret_cast<char*>(&count), 1) &&
-           file.read(reinterpret_cast<char*>(&value), 1)) {
+    while (file.read(reinterpret_cast<char*>(&value), 1) &&
+           file.read(reinterpret_cast<char*>(&count), 1)) {
 
         for (int i = 0; i < count; ++i) {
             m_voxels[index++] = (value != 0);
@@ -79,9 +77,11 @@ void Bread::init() {
 
     file.close();
 
+    fillIn();
+
     writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-    fillIn();
+
 
     int x, y, z;
     voxelToIndices(200, x, y, z);
@@ -96,7 +96,9 @@ void Bread::init() {
     generateSphere(0, 0, 0, 2);
     generateBubbles(2, 20);
 
-    // distanceVoxels();
+
+
+    distanceVoxels();
 
     cout << "done!" << endl;
 }
@@ -229,8 +231,7 @@ void Bread::fillIn() {
                     if (voxelAt(x, y, z)) {
                         state = 1;
                     }
-                }
-                if (state == 1) {
+                } else {
                     if (voxelAt(x, y, z)) {
                         state = 0;
                     } else {
