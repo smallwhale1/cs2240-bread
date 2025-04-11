@@ -37,10 +37,8 @@ void Bread::writeBinvox(const std::string& filename, int dimX, int dimY, int dim
         }
     }
 
-    if (count > 0) {
-        output.put(currVal);
-        output.put(count);
-    }
+    output.put(currVal);
+    output.put(count);
 
     output.close();
 }

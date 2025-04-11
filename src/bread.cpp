@@ -64,12 +64,13 @@ void Bread::init() {
     unsigned char count = 0;
     int index = 0;
 
-    while (file.read(reinterpret_cast<char*>(&value), 1) &&
-           file.read(reinterpret_cast<char*>(&count), 1)) {
+    while (file.read(reinterpret_cast<char*>(&count), 1) &&
+           file.read(reinterpret_cast<char*>(&value), 1)) {
 
         for (int i = 0; i < count; ++i) {
             m_voxels[index++] = (value != 0);
         }
+        auto x = 1;
     }
 
     // if (index != numVoxels) {
@@ -77,6 +78,10 @@ void Bread::init() {
     // }
 
     file.close();
+
+    writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+
+    fillIn();
 
     int x, y, z;
     voxelToIndices(200, x, y, z);
@@ -91,7 +96,7 @@ void Bread::init() {
     generateSphere(0, 0, 0, 2);
     generateBubbles(2, 20);
 
-    distanceVoxels();
+    // distanceVoxels();
 
     cout << "done!" << endl;
 }
@@ -134,7 +139,7 @@ void Bread::indicesToVoxel(int x, int y, int z, int &index) {
 }
 
 void Bread::voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ) {
-    worldX = (x - 0.5f) / dimX;
+    worldX = (x + 0.5f) / dimX;
     worldY = (y + 0.5f) / dimY;
     worldZ = (z + 0.5f) / dimZ;
     worldX = scale * worldX + translateX;
