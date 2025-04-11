@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-void Bread::writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels) {
+void Bread::writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale) {
     std::ofstream output(filename, std::ios::binary);
     if (!output) {
         throw std::runtime_error("error opening output file");
@@ -11,8 +11,8 @@ void Bread::writeBinvox(const std::string& filename, int dimX, int dimY, int dim
     // header
     output << "#binvox 1\n";
     output << "dim " << dimX << " " << dimY << " " << dimZ << "\n";
-    output << "translate 0 0 0\n";
-    output << "scale 1.0\n";
+    output << "translate " << translateX << " " << translateY << " " << translateZ <<"\n";
+    output << "scale " << scale << "\n";
     output << "data\n";
 
     unsigned char currVal = voxels[0] ? 1 : 0;

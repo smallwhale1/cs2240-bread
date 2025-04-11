@@ -95,7 +95,7 @@ void Bread::distanceVoxels() {
     m_distance_voxels.resize(m_voxels.size());
     for (int i = 0; i < m_voxels.size(); i++) {
         if (!m_voxels[i]) {
-            m_distance_voxels[i] = 0.f;
+            m_distance_voxels[i] = -1.f;
         } else {
             int x, y, z;
             voxelToIndices(i, x, y, z);

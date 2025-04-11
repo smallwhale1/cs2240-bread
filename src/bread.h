@@ -25,6 +25,7 @@ private:
     void indicesToVoxel(int x, int y, int z, int &index);
     void generateSphere(int x, int y, int z, int radius);
     void generateBubbles(int minRadius, int maxRadius);
+    void fillIn();
 };
 
 #endif // BREAD_H
