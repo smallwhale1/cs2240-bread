@@ -172,7 +172,7 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
 
                 float distance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
 
-                // std::cout << distance << std::endl;
+                // std::cout << distance << std::endl; // uncomment for checking that distance calculations are correct
                 if (distance <= radius) {
                     m_voxels[idx] = 0;
                     count++;
@@ -183,7 +183,7 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
         }
     }
 
-    // std::cout << "count: " << count << std::endl;
+    // std::cout << "count: " << count << std::endl; // uncomment to check that we're subtracting the correct number of voxels for a given sphere
 }
 
 // use min of 2 and max of 20 for baguette setting
