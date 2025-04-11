@@ -51,6 +51,7 @@ add_executable(${PROJECT_NAME}
     util/unsupportedeigenthing/OpenGLSupport
     src/bread.h
     src/bread.cpp
+    src/file.cpp
 )
 
 # GLEW: this creates its library and allows you to `#include "GL/glew.h"`
