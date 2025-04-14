@@ -29,12 +29,19 @@ private:
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
 
-    // constants
-    float p = 0.5;
+    // parameters
+    // temperature deformation
+    float p = 5;
+    // rising
+    float S = 5;
 
     // deformation
     void forwardmap(std::vector<Eigen::Vector3f> grad);
     void backmap(std::vector<Eigen::Vector3f> grad);
+
+    // rising
+    // stores max bubble radius at a particular voxel
+    std::vector<int> m_P;
 };
 
 #endif // BREAD_H

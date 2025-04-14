@@ -55,6 +55,7 @@ void Bread::init() {
     int numVoxels = dimX * dimY * dimZ;
 
     m_voxels.resize(numVoxels);
+    m_P.resize(numVoxels);
     // std::vector<bool> voxels(numVoxels);
 
     // parse data
@@ -208,6 +209,8 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
                 // std::cout << distance << std::endl; // uncomment for checking that distance calculations are correct
                 if (distance <= radius) {
                     m_voxels[idx] = 0;
+                    // modify P
+                    m_P[idx] = max(m_P[idx], radius);
                     count++;
                 } else {
                     // m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
