@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include <QString>
 #include <QFile>
@@ -108,7 +109,7 @@ void Bread::init() {
 
     writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-    // distanceVoxels();
+    distanceVoxels();
     initTemperatures();
 
     cout << "done!" << endl;
@@ -321,14 +322,61 @@ void Bread::bake(){
     float k = 0.07; // thermal conductivity
     float lambda = 2.257f; //latent heat of evaporation/vaporization of water (like how much heat is needs for a phase change i think)
     float diffusivity = 1.35e-10f; //liquid water diffusivity (inversely proportoinal to viscosity, basically how easily it mixes with other stuff)
+    float h_w = 1.f; // mass transfer coefficient water
+    float h_v = 1.f; // mass transfer coefficient vapor
     float specific_heat = 3500.f; //amount of heat required to increase the temperature of a specific material by one degree
 
     float density = 284.f; //284 of initial condition of dough, TODO: changes by 170 + 284W for each time step
 
+    float distance = 1.f;
 
     std::vector<float> dtdt(m_temperatures.size(), 0.f); //change in temperature over time
     std::vector<float> dtdx(m_temperatures.size(), 0.f); //change in temperature over distance
     std::vector<float> dtdx2(m_temperatures.size(), 0.f); //change in roc of temprature over distance
+
+    std::vector<float> dWdt(m_temperatures.size(), 0.f); // change in water diffusion over t
+    std::vector<float> dWdx(m_temperatures.size(), 0.f); // change in water diffusion over x
+    std::vector<float> dWdx2(m_temperatures.size(), 0.f); // derivative of dWdx
+
+    // fill in dWdx
+    dWdx[0] = h_w * (m_W[0] - temp_air);
+    dWdx[m_W.size() - 1] = 0.f;
+
+    for (int x = 0; x < m_W.size(); x++) {
+        if (x == 0 || x == m_W.size() - 1) {
+            continue;
+        }
+        dWdx[x] = m_W[x+1] - m_W[x-1] / (distance * 2.f); // avg rate of change
+    }
+
+    // fill in dWdx2
+    for (int x = 0; x < m_W.size(); x++) {
+        if (x == 0 || x == m_W.size() - 1) {
+            continue;
+        }
+        dWdx2[x] = dWdx[x+1] - dWdx[x-1] / (distance * 2.f);
+    }
+
+    // fill in dWdt
+    for (int x = 0; x < m_W.size(); x++) {
+        if (x == 0 || x == m_W.size() - 1) {
+            continue;
+        }
+        dWdt[x] = diffusivity * dWdx2[x];
+    }
+
+    // timestep forward
+    for (int x = 0; x < m_W.size(); x++) {
+        if (x == 0 || x == m_W.size() - 1) {
+            continue;
+        }
+        // explicit euler for now
+        m_W[x] += timestep * dWdt[x];
+    }
+
+    // LANA maybe check this: fill in edge cases for dWdt
+    m_W[0] = m_W[1] - dWdx[0];
+    m_W[m_W.size() - 1] = m_W[m_W.size() - 2];
 
     //fill up dtdx
     for(int x = 0; x < m_temperatures.size(); x++){
@@ -337,7 +385,7 @@ void Bread::bake(){
             dtdx[x] = 0.f;
 
         } else if(x == m_temperatures.size() - 1){ //inside edge of the bread
-            dtdx[x] = (hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * density * diffusivity * (dwdx[0]));
+            dtdx[x] = (hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * density * diffusivity * (dWdx[0]));
 
         } else { //every other internal point in the bread
 
@@ -360,7 +408,8 @@ void Bread::bake(){
 void Bread::initTemperatures(){
 
     float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
-    m_temperatures.assign(largest, 23.0f); //23 degrees celsius for every location
+    m_temperatures.resize(largest / 2);
+    m_temperatures.assign(largest / 2, 23.0f); //23 degrees celsius for every location
 }
 
 void calcHeatTranferCoeff(){
