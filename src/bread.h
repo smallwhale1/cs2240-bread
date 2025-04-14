@@ -27,6 +27,11 @@ private:
     void generateBubbles(int minRadius, int maxRadius);
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
+
+    std::vector<float> m_temperatures;
+    void initTemperatures();
+    void bake();
+
 };
 
 #endif // BREAD_H

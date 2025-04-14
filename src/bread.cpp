@@ -109,6 +109,7 @@ void Bread::init() {
     writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     // distanceVoxels();
+    initTemperatures();
 
     cout << "done!" << endl;
 }
@@ -282,7 +283,7 @@ void Bread::fillIn() {
     }
 }
 //iterates over every distance for each time step, stores results in temperatures vector
-void bake(){
+void Bread::bake(){
 
     //hr, hc
 
@@ -325,7 +326,41 @@ void bake(){
     float density = 284.f; //284 of initial condition of dough, TODO: changes by 170 + 284W for each time step
 
 
+    std::vector<float> dtdt(m_temperatures.size(), 0.f); //change in temperature over time
+    std::vector<float> dtdx(m_temperatures.size(), 0.f); //change in temperature over distance
+    std::vector<float> dtdx2(m_temperatures.size(), 0.f); //change in roc of temprature over distance
 
+    //fill up dtdx
+    for(int x = 0; x < m_temperatures.size(); x++){
+
+        if(x == 0){ //outside edge of the bread
+            dtdx[x] = 0.f;
+
+        } else if(x == m_temperatures.size() - 1){ //inside edge of the bread
+            dtdx[x] = (hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * density * diffusivity * (dwdx[0]));
+
+        } else { //every other internal point in the bread
+
+
+
+
+
+
+
+        }
+    }
+
+
+
+
+
+
+}
+
+void Bread::initTemperatures(){
+
+    float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
+    m_temperatures.assign(largest, 23.0f); //23 degrees celsius for every location
 }
 
 void calcHeatTranferCoeff(){
