@@ -1,5 +1,6 @@
 #ifndef BREAD_H
 #define BREAD_H
+#include "Eigen/Dense"
 
 #include <vector>
 
@@ -27,6 +28,13 @@ private:
     void generateBubbles(int minRadius, int maxRadius);
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
+
+    // constants
+    float p = 0.5;
+
+    // deformation
+    void forwardmap(std::vector<Eigen::Vector3f> grad);
+    void backmap(std::vector<Eigen::Vector3f> grad);
 };
 
 #endif // BREAD_H
