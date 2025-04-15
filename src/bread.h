@@ -38,6 +38,8 @@ private:
     // deformation
     void forwardmap(std::vector<Eigen::Vector3f> grad);
     void backmap(std::vector<Eigen::Vector3f> grad);
+    void constructMockGradient();
+    std::vector<float> m_mock_gradient;
 
     // rising
     // stores max bubble radius at a particular voxel

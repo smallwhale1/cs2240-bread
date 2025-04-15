@@ -1,7 +1,31 @@
 #include "bread.h"
 #include <iostream>
+#include <algorithm>
 
 using namespace Eigen;
+
+void Bread::constructMockGradient() {
+    // std::vector<float> mockGradients;
+    m_mock_gradient.resize(m_distance_voxels.size());
+
+    float maxTemp = 100.f;
+    float minTemp = 50.f;
+
+    float minRadius = 0.f;
+    float maxRadius = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
+
+    // at the max radius, temp of max temp and interpoate to min temp
+    for (int i = 0; i < m_distance_voxels.size(); i++) {
+        float temp = 0.f;
+        if (m_distance_voxels[i] == -1) {
+            temp = 114.f;
+        } else {
+            temp = minTemp + (m_distance_voxels[i] / maxRadius) * (maxTemp - minTemp);
+        }
+        // std::cout << temp << std::endl;
+        m_mock_gradient[i] = temp;
+    }
+}
 
 // for backmapping we somehow need to reverse solve for [u,v,w] in
 // [x,y,z] = [u,v,w' + pg'[u,v,w] which idk how to do rn
@@ -19,7 +43,7 @@ void Bread::backmap(std::vector<Vector3f> grad) {
 
                 // get original location
                 Vector3f newLoc = Vector3f(x, y, z);
-                // TODO: fix this to actually inverse
+                // approximate by subtracting the gradient here
                 Vector3f oldLoc = newLoc - p * grad[index];
 
                 // sample around old loc, just use nearest neighbor for now

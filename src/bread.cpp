@@ -109,7 +109,8 @@ void Bread::init() {
 
     writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-    // distanceVoxels();
+    distanceVoxels();
+    constructMockGradient();
 
     cout << "done!" << endl;
 }
