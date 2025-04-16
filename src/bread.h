@@ -31,7 +31,7 @@ private:
 
     // parameters
     // temperature deformation
-    float p = 0;
+    float p = 1;
     // rising
     float S = 5;
 
