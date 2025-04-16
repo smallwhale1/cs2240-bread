@@ -4,11 +4,11 @@
 
 using namespace Eigen;
 
-void Bread::constructMockGradient() {
+void Bread::constructMockTemp() {
     // std::vector<float> mockGradients;
-    m_mock_gradient.resize(m_distance_voxels.size());
+    m_mock_temp.resize(m_distance_voxels.size());
 
-    float maxTemp = 100.f;
+    float maxTemp = 110.f;
     float minTemp = 50.f;
 
     float minRadius = 0.f;
@@ -20,18 +20,22 @@ void Bread::constructMockGradient() {
         if (m_distance_voxels[i] == -1) {
             temp = 114.f;
         } else {
-            temp = minTemp + (m_distance_voxels[i] / maxRadius) * (maxTemp - minTemp);
+            if (m_distance_voxels[i] <= 3) {
+                temp = 110.f;
+            } else {
+                temp = minTemp + (m_distance_voxels[i] / maxRadius) * (maxTemp - minTemp);
+            }
         }
         // std::cout << temp << std::endl;
-        m_mock_gradient[i] = temp;
+        m_mock_temp[i] = temp;
     }
 }
 
-std::vector<Vector3f>& Bread::calcGradient(std::vector<float> inputVec) {
+std::vector<Vector3f> Bread::calcGradient(std::vector<float> inputVec) {
     std::vector<Vector3f> gradVector;
     gradVector.resize(m_voxels.size());
     for (int x = 0; x < dimX; x++) {
-        for (int y = 0; x < dimY; y++) {
+        for (int y = 0; y < dimY; y++) {
             for (int z = 0; z < dimZ; z++) {
                 int indexx1, indexx2;
                 indicesToVoxel(std::max(x - 1, 0), y, z, indexx1);
@@ -59,14 +63,15 @@ std::vector<Vector3f>& Bread::calcGradient(std::vector<float> inputVec) {
     return gradVector;
 }
 
-std::vector<float>& Bread::gaussian(std::vector<float> inputVec) {
+std::vector<float> Bread::gaussian(std::vector<float> inputVec) {
 
 }
 
 // for backmapping we somehow need to reverse solve for [u,v,w] in
 // [x,y,z] = [u,v,w' + pg'[u,v,w] which idk how to do rn
-void Bread::backmap(std::vector<Vector3f> grad) {
+std::vector<bool> Bread::backmap(std::vector<Vector3f> grad) {
     std::vector<bool> deformedVoxels;
+    deformedVoxels.resize(m_voxels.size());
     // for each voxel
     // backmap to the original
     // perform trilinear or some interpolation to sample original voxles
@@ -89,6 +94,7 @@ void Bread::backmap(std::vector<Vector3f> grad) {
             }
         }
     }
+    return deformedVoxels;
 }
 
 void Bread::forwardmap(std::vector<Vector3f> grad) {

@@ -1,5 +1,6 @@
 #include "bread.h"
 #include <iostream>
+#include <algorithm>
 #include <fstream>
 
 void Bread::writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale) {

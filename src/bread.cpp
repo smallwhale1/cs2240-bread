@@ -107,10 +107,14 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    // writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     distanceVoxels();
-    constructMockGradient();
+    constructMockTemp();
+    std::vector<Eigen::Vector3f> gradVector = calcGradient(m_mock_temp);
+    m_voxels = backmap(gradVector);
+
+    writeBinvox("test-deformed.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     cout << "done!" << endl;
 }
@@ -268,7 +272,7 @@ void Bread::fillIn() {
                                 indicesToVoxel(x, y, w, index);
                                 bool zz = m_voxels[index];
                                 if (m_voxels[index] == 0) {
-                                   cout << "fillig in" << endl;
+                                   // cout << "filling in" << endl;
                                 }
                                 m_voxels[index] = 1;
 
