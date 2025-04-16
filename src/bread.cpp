@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <omp.h>
 
 #include <QString>
 #include <QFile>
@@ -20,7 +21,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
+    const std::string& filepath = "meshes-binvox/bread_64.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -91,28 +92,43 @@ void Bread::init() {
     std::cout << "i: " << i << std::endl;
 
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 5);
+    generateBubbles(1, 8);
 
-    // do cross section
+    std::vector<bool> voxelCopy = m_voxels;
+    // // do cross section
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
         voxelToIndices(i, x, y, z);
         // cout << "x: " << x << endl;
         // cout << "y: " << y << endl;
         // cout << "z: " << z << endl;
-        if (x < 24) {
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            voxelCopy[i] = 0;
+        }
+    }
+
+    writeBinvox("test.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+
+    cout << "dimX: " << dimX << endl;
+    distanceVoxels();
+    constructMockTemp();
+    std::vector<Eigen::Vector3f> gradVector = calcGradient(m_mock_temp);
+    m_voxels = backmap(gradVector);
+
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
             // cout << "hi" << endl;
             // set to 0
             m_voxels[i] = 0;
         }
     }
-
-    // writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
-
-    distanceVoxels();
-    constructMockTemp();
-    std::vector<Eigen::Vector3f> gradVector = calcGradient(m_mock_temp);
-    m_voxels = backmap(gradVector);
 
     writeBinvox("test-deformed.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
@@ -121,6 +137,8 @@ void Bread::init() {
 
 void Bread::distanceVoxels() {
     m_distance_voxels.resize(m_voxels.size());
+
+    #pragma omp parallel for
     for (int i = 0; i < m_voxels.size(); i++) {
         if (!m_voxels[i]) {
             m_distance_voxels[i] = -1.f;
