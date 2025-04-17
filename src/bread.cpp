@@ -111,6 +111,11 @@ void Bread::init() {
 
     distanceVoxels();
     initTemperatures();
+    initW();
+
+    for (int i = 0; i < bakingIterations; i++) {
+        bake();
+    }
 
     cout << "done!" << endl;
 }
@@ -346,7 +351,7 @@ void Bread::bake(){
         if (x == 0 || x == m_W.size() - 1) {
             continue;
         }
-        dWdx[x] = m_W[x+1] - m_W[x-1] / (distance * 2.f); // avg rate of change
+        dWdx[x] = (m_W[x+1] - m_W[x-1]) / (distance * 2.f); // avg rate of change
     }
 
     // fill in dWdx2
@@ -354,7 +359,7 @@ void Bread::bake(){
         if (x == 0 || x == m_W.size() - 1) {
             continue;
         }
-        dWdx2[x] = dWdx[x+1] - dWdx[x-1] / (distance * 2.f);
+        dWdx2[x] = (dWdx[x+1] - dWdx[x-1]) / (distance * 2.f);
     }
 
     // fill in dWdt
@@ -388,20 +393,51 @@ void Bread::bake(){
             dtdx[x] = (hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * density * diffusivity * (dWdx[0]));
 
         } else { //every other internal point in the bread
-
-
-
-
-
-
-
+            dtdx[x] = (m_temperatures[x - 1] + m_temperatures[x + 1]) / (distance * 2.f);
         }
     }
 
+    for(int x = 0; x < dtdx2.size(); x++){
+
+        if(x == 0){ //outside edge of the bread
+            dtdx2[x] = (dtdx[1] - dtdx[0]) / distance;
+
+        } else if(x == m_temperatures.size() - 1){ //inside edge of the bread
+            dtdx2[x] = (dtdx[x] - dtdx[x - 1]) / distance;
+
+        } else { //every other internal point in the bread
+            dtdx2[x] = (dtdx[x - 1] + dtdx[x + 1]) / (distance * 2.f);
+        }
+    }
+
+    // fill up dtdt
+    for (int x = 0; x < dtdt.size(); x++) {
+        float new_p = 170.f + (284.f * m_W[x]);
+        float dpdt = (new_p - m_p[x]) / distance;
+        m_p[x] = new_p;
+        dtdt[x] = (k * dtdx2[x]) / (new_p * specific_heat) + (lambda * dWdt[x]) / specific_heat + (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
+    }
 
 
+    // update m_temperatures
+    for (int x = 0; x < m_temperatures.size(); x++) {
+        m_temperatures[x] += timestep * dtdt[x];
+    }
 
+    // update m_p
+    // for (int x = 0; x < m_p.size(); x++) {
+    //     m_p[x] = 170.f + 284.f * m_W[x];
+    // }
+}
 
+void Bread::initW() {
+    // fill m_W
+    // m_W.resize(m_temperatures.size());
+    m_W.assign(m_temperatures.size(), 0.4f);
+
+    // fill m_p
+    m_p.reserve(m_temperatures.size());
+    m_p.assign(m_temperatures.size(), 285.f);
 
 }
 
@@ -409,7 +445,7 @@ void Bread::initTemperatures(){
 
     float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
     m_temperatures.resize(largest / 2);
-    m_temperatures.assign(largest / 2, 23.0f); //23 degrees celsius for every location
+    m_temperatures.assign(largest / 2, 25.0f); //23 degrees celsius for every location
 }
 
 void calcHeatTranferCoeff(){
