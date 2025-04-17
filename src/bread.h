@@ -30,9 +30,13 @@ private:
 
     std::vector<float> m_temperatures;
     std::vector<float> m_W;
-    float timestep = 1.f;
+    std::vector<float> m_p;
+    float timestep = 1.f; // maybe should be like 30??
+    int bakingIterations = 20;
     void initTemperatures();
     void bake();
+    void initW();
+    float prevDensity;
 
 };
 
