@@ -21,7 +21,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
+    const std::string& filepath = "meshes-binvox/bun.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -93,7 +93,7 @@ void Bread::init() {
     std::cout << "i: " << i << std::endl;
 
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 5);
+    generateBubbles(1, 10);
 
     // do cross section
     for (int i = 0; i < m_voxels.size(); i++) {
@@ -102,7 +102,7 @@ void Bread::init() {
         // cout << "x: " << x << endl;
         // cout << "y: " << y << endl;
         // cout << "z: " << z << endl;
-        if (x < 24) {
+        if (y < 128) {
             // cout << "hi" << endl;
             // set to 0
             m_voxels[i] = 0;
@@ -239,7 +239,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 64; // resolution of proving vol in each spatial coordinate
+    int r = 256; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
