@@ -80,6 +80,8 @@ void Bread::init() {
 
     fillIn();
 
+    distanceVoxels();
+
     int x, y, z;
     voxelToIndices(200, x, y, z);
     std::cout << "x: " << x << std::endl;
@@ -107,14 +109,18 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    // writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-    distanceVoxels();
+
     initTemperatures();
     initW();
 
     for (int i = 0; i < bakingIterations; i++) {
         bake();
+    }
+
+    for (int i = 0; i < m_temperatures.size(); i++) {
+        cout << m_temperatures[i] << endl;
     }
 
     cout << "done!" << endl;
@@ -124,7 +130,7 @@ void Bread::distanceVoxels() {
     m_distance_voxels.resize(m_voxels.size());
     for (int i = 0; i < m_voxels.size(); i++) {
         if (!m_voxels[i]) {
-            m_distance_voxels[i] = -1.f;
+            m_distance_voxels[i] = 0.f;
         } else {
             int x, y, z;
             voxelToIndices(i, x, y, z);
@@ -137,11 +143,13 @@ void Bread::distanceVoxels() {
                     int x_prime, y_prime, z_prime;
                     voxelToIndices(j, x_prime, y_prime, z_prime);
                     float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
+                    cout << currDistance << endl;
                     if (currDistance < minDistance) {
                         minDistance = currDistance;
                     }
                 }
             }
+            // cout << minDistance << endl;
             m_distance_voxels[i] = minDistance;
         }
     }
@@ -269,20 +277,10 @@ void Bread::fillIn() {
                             for (int w = startZ + 1; w < z; w++) {
                                 int index;
                                 indicesToVoxel(x, y, w, index);
-                                bool zz = m_voxels[index];
-                                if (m_voxels[index] == 0) {
-                                   cout << "fillig in" << endl;
-                                }
                                 m_voxels[index] = 1;
-
                             }
                         }
                     }
-                    // else {
-                    //     int index;
-                    //     indicesToVoxel(x, y, z, index);
-                    //     m_voxels[index] = 1;
-                    // }
                 }
             }
         }
@@ -444,6 +442,7 @@ void Bread::initW() {
 void Bread::initTemperatures(){
 
     float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
+    cout << largest << endl;
     m_temperatures.resize(largest / 2);
     m_temperatures.assign(largest / 2, 25.0f); //23 degrees celsius for every location
 }
