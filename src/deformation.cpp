@@ -31,40 +31,63 @@ void Bread::constructMockTemp() {
     }
 }
 
-std::vector<Vector3f> Bread::calcGradient(std::vector<float> inputVec) {
-    std::vector<Vector3f> gradVector;
-    gradVector.resize(m_voxels.size());
-    for (int x = 0; x < dimX; x++) {
-        for (int y = 0; y < dimY; y++) {
-            for (int z = 0; z < dimZ; z++) {
-                int indexx1, indexx2;
-                indicesToVoxel(std::max(x - 1, 0), y, z, indexx1);
-                indicesToVoxel(std::min(x + 1, dimX - 1), y, z, indexx2);
+// std::vector<Vector3f> Bread::calcGradient(std::vector<float> inputVec) {
+//     std::vector<Vector3f> gradVector;
+//     gradVector.resize(m_voxels.size());
+//     for (int x = 0; x < dimX; x++) {
+//         for (int y = 0; y < dimY; y++) {
+//             for (int z = 0; z < dimZ; z++) {
+//                 int indexx1, indexx2;
+//                 indicesToVoxel(std::max(x - 1, 0), y, z, indexx1);
+//                 indicesToVoxel(std::min(x + 1, dimX - 1), y, z, indexx2);
 
-                int indexy1, indexy2;
-                indicesToVoxel(x, std::max(y - 1, 0), z, indexy1);
-                indicesToVoxel(x, std::min(y + 1, dimY - 1), z, indexy2);
+//                 int indexy1, indexy2;
+//                 indicesToVoxel(x, std::max(y - 1, 0), z, indexy1);
+//                 indicesToVoxel(x, std::min(y + 1, dimY - 1), z, indexy2);
 
-                int indexz1, indexz2;
-                indicesToVoxel(x, y, std::max(z - 1, 0), indexz1);
-                indicesToVoxel(x, y, std::min(z + 1, dimZ - 1), indexz2);
+//                 int indexz1, indexz2;
+//                 indicesToVoxel(x, y, std::max(z - 1, 0), indexz1);
+//                 indicesToVoxel(x, y, std::min(z + 1, dimZ - 1), indexz2);
 
-                float gradX = (inputVec[indexx2] - inputVec[indexx1]) / 2.f;
-                float gradY = (inputVec[indexy2] - inputVec[indexy1]) / 2.f;
-                float gradZ = (inputVec[indexz2] - inputVec[indexz1]) / 2.f;
+//                 float gradX = (inputVec[indexx2] - inputVec[indexx1]) / 2.f;
+//                 float gradY = (inputVec[indexy2] - inputVec[indexy1]) / 2.f;
+//                 float gradZ = (inputVec[indexz2] - inputVec[indexz1]) / 2.f;
 
-                int index;
-                indicesToVoxel(x, y, z, index);
-                gradVector[index] = Vector3f(gradX, gradY, gradZ);
-            }
-        }
-    }
+//                 int index;
+//                 indicesToVoxel(x, y, z, index);
+//                 gradVector[index] = Vector3f(gradX, gradY, gradZ);
+//             }
+//         }
+//     }
 
-    return gradVector;
+//     return gradVector;
+// }
+
+std::vector<Vector3f> Bread::calcGradient(int index, int kernel_size) {
+
 }
 
-std::vector<float> Bread::gaussian(std::vector<float> inputVec) {
+// TODO DELETE THIS COMMENT: used my code from filter so uhh i hope it's right LOL
+// TODO: call this function somewhere in init so we create our filter before we sim any geometry changes
+// creates a 1D filter, so we convolve with this over all three dims
+void Bread::generateGaussianFilter() {
+    m_gaussianKernel.assign(m_filterRadius * 2 + 1, 0);
 
+    float stddev = pow(m_filterRadius / 3.f, 2);
+
+    int kernel_index = -1;
+    float total_weight = 0;
+    for (int i = -1 * m_filterRadius; i <= m_filterRadius; i++) {
+        kernel_index++;
+        m_gaussianKernel.at(i + m_filterRadius) = pow(exp(1), (-1 * pow(i, 2)) / (2 * stddev)) / sqrt(2 * M_PI * stddev);
+        total_weight += m_gaussianKernel.at(kernel_index);
+    }
+
+    kernel_index = -1;
+    for (int i = -1 * m_filterRadius; i <= m_filterRadius; i++) {
+        kernel_index++;
+        m_gaussianKernel.at(kernel_index) /= total_weight;
+    }
 }
 
 // for backmapping we somehow need to reverse solve for [u,v,w] in

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
-set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
+# set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
+# set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
 
 # Sets project name
 project(bread LANGUAGES CXX C)
@@ -110,8 +110,8 @@ if (APPLE)
   set(CMAKE_CXX_FLAGS "-Wno-deprecated-volatile")
 endif()
 
-find_package(OpenMP REQUIRED)
+# find_package(OpenMP REQUIRED)
 
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(bread PRIVATE OpenMP::OpenMP_CXX)
-endif()
+# if(OpenMP_CXX_FOUND)
+#     target_link_libraries(bread PRIVATE OpenMP::OpenMP_CXX)
+# endif()

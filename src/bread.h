@@ -39,9 +39,14 @@ private:
     void forwardmap(std::vector<Eigen::Vector3f> grad);
     std::vector<bool> backmap(std::vector<Eigen::Vector3f> grad);
     void constructMockTemp();
-    std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
-    std::vector<float> gaussian(std::vector<float> inputVec);
+    // std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
+    std::vector<Eigen::Vector3f> calcGradient(int index, int kernel_size);
+    // std::vector<float> gaussian(std::vector<float> inputVec);
+    void generateGaussianFilter();
     std::vector<float> m_mock_temp;
+
+    int m_filterRadius = 3; // change radius of filter
+    std::vector<float> m_gaussianKernel;
 
     // rising
     // stores max bubble radius at a particular voxel

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <omp.h>
+// #include <omp.h>
 
 #include <QString>
 #include <QFile>
