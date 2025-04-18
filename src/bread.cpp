@@ -295,13 +295,14 @@ void Bread::bake(){
 
     float sigma = 5.670374419e-8f;
     float temp_air; //temp in air
-    float temp_surface; //temp at surface of dough
+    float temp_surface = 25.0f; //starting temp at the surface of the dough
     float temp_radial = 283.15; //temp at heat source
     float emissivity_product = 0.9f;
-    float emissivity_radial;
+    float emissivity_radial = 0.5f; //tbh not sure but it's based on the this website and the common wire heating element in an oven of a nickel-copper mix
+                                    //https://www.flukeprocessinstruments.com/en-us/service-and-support/knowledge-center/infrared-technology/emissivity-metals
 
-    float asp = 1.0f; //TODO: length of the sample
-    float bsp = 1.0f; //TODO: width of the sample
+    float asp = 1.0f; //length of the sample
+    float bsp = 1.0f; //width of the sample
     float lsp; //distance between radial source and sample, TODO: from distance mapping
     float a = asp / lsp;
     float b = bsp / lsp;
@@ -428,7 +429,7 @@ void Bread::bake(){
     // }
 }
 
-void Bread::initW() {
+void Bread::initBake() {
     // fill m_W
     // m_W.resize(m_temperatures.size());
     m_W.assign(m_temperatures.size(), 0.4f);

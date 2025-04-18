@@ -35,7 +35,7 @@ private:
     int bakingIterations = 20;
     void initTemperatures();
     void bake();
-    void initW();
+    void initBake();
     float prevDensity;
 
 };
