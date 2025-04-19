@@ -251,7 +251,7 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
                 indicesToVoxel(u, v, w, index);
 
                 // warp coordinate
-                Vector3f newLoc = Vector3f(u, v, w) + (p * grad[index]);
+                Vector3f newLoc = Vector3f(u, v, w) - (p * grad[index]);
 
                 int newIndex;
                 indicesToVoxel(int(newLoc[0]), int(newLoc[1]), int(newLoc[2]), newIndex);
