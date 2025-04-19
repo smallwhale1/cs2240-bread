@@ -111,11 +111,16 @@ void Bread::init() {
 
     writeBinvox("test.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
-    cout << "dimX: " << dimX << endl;
     distanceVoxels();
     constructMockTemp();
-    std::vector<Eigen::Vector3f> gradVector = calcGradient(m_mock_temp);
-    m_voxels = backmap(gradVector);
+    generateGaussianFilter();
+    convolveGaussian();
+    // std::vector<std::vector<float>> gradient = calcGradient(100);
+    // std::cout << gradient[0][5] << std::endl;
+    // std::cout << gradient[1][5] << std::endl;
+    // std::cout << gradient[2][5] << std::endl;
+    m_gradVector = calcGradient(m_mock_temp);
+    forwardmap(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
