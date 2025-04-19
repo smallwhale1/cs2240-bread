@@ -20,11 +20,14 @@ void Bread::constructMockTemp() {
         if (m_distance_voxels[i] == -1) {
             temp = 114.f;
         } else {
-            if (m_distance_voxels[i] <= 3) {
-                temp = 110;
-            } else {
-                temp = minTemp + (m_distance_voxels[i] / maxRadius) * (maxTemp - minTemp);
-            }
+            // if (m_distance_voxels[i] <= 3) {
+            //     temp = 110;
+            // } else {
+
+                temp = minTemp + ((maxRadius - m_distance_voxels[i]) / maxRadius) * (maxTemp - minTemp);
+                std::cout << "distance: " << m_distance_voxels[i] << std::endl;
+                std::cout << "temp:  " << temp << std::endl;
+            // }
         }
         m_mock_temp[i] = temp;
     }

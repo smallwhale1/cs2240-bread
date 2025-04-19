@@ -91,6 +91,7 @@ void Bread::init() {
     indicesToVoxel(x, y, z, i);
     std::cout << "i: " << i << std::endl;
 
+    distanceVoxels();
     generateSphere(0, 0, 0, 2);
     generateBubbles(1, 7);
 
@@ -111,7 +112,7 @@ void Bread::init() {
 
     writeBinvox("test.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
-    distanceVoxels();
+    // distanceVoxels();
     constructMockTemp();
     generateGaussianFilter();
     // convolveGaussian();
@@ -120,7 +121,7 @@ void Bread::init() {
     // std::cout << gradient[1][5] << std::endl;
     // std::cout << gradient[2][5] << std::endl;
     m_gradVector = calcGradient(m_mock_temp);
-    forwardmap(m_gradVector);
+    warpBubbles(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
