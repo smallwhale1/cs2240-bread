@@ -36,13 +36,10 @@ private:
     float S = 5;
 
     // deformation
-    void forwardmap(std::vector<Eigen::Vector3f> grad);
-    std::vector<bool> backmap(std::vector<Eigen::Vector3f> grad);
+    void warpBubbles(std::vector<Eigen::Vector3f> grad);
     void constructMockTemp();
     std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
     void convolveGaussian();
-    // std::vector<std::vector<float>> calcGradient(int index);
-    // std::vector<float> gaussian(std::vector<float> inputVec);
     void generateGaussianFilter();
     std::vector<float> m_mock_temp;
 

@@ -170,6 +170,7 @@ void Bread::generateGaussianFilter() {
     }
 }
 
+// TODO: revisit
 void Bread::convolveGaussian() {
     std::vector<float> tempCopy = m_mock_temp;
 
@@ -232,46 +233,7 @@ void Bread::convolveGaussian() {
     }
 }
 
-// for backmapping we somehow need to reverse solve for [u,v,w] in
-// [x,y,z] = [u,v,w' + pg'[u,v,w] which idk how to do rn
-std::vector<bool> Bread::backmap(std::vector<Vector3f> grad) {
-    std::vector<bool> deformedVoxels;
-    deformedVoxels.assign(m_voxels.size(), 0);
-    // for each voxel
-    // backmap to the original
-    // perform trilinear or some interpolation to sample original voxles
-
-    for (int x = 0; x < dimX; x++) {
-        for (int y = 0; y < dimY; y++) {
-            for (int z = 0; z < dimZ; z++) {
-                int index;
-                indicesToVoxel(x, y, z, index);
-
-                // get original location
-                Vector3f newLoc = Vector3f(x, y, z);
-                // approximate by subtracting the gradient here
-                Vector3f oldLoc = newLoc - p * grad[index];
-
-                if (oldLoc[0] < 0 || oldLoc[0] >= dimX || oldLoc[1] < 0 || oldLoc[1] >= dimY || oldLoc[2] < 0 || oldLoc[2] >= dimZ) {
-                    deformedVoxels[index] = 0;
-                } else {
-                    // sample around old loc, just use nearest neighbor for now
-                    bool vox = voxelAt(int(oldLoc[0]), int(oldLoc[1]), int(oldLoc[2]));
-
-                    deformedVoxels[index] = vox;
-                }
-
-            }
-        }
-    }
-
-    for (int i = 0; i < m_voxels.size(); i++) {
-        m_voxels[i] = deformedVoxels[i];
-    }
-    return deformedVoxels;
-}
-
-void Bread::forwardmap(std::vector<Vector3f> grad) {
+void Bread::warpBubbles(std::vector<Vector3f> grad) {
     std::vector<bool> deformedVoxels;
     deformedVoxels.assign(m_voxels.size(), 0);
     std::vector<bool> visited;
@@ -303,5 +265,4 @@ void Bread::forwardmap(std::vector<Vector3f> grad) {
     for (int i = 0; i < m_voxels.size(); i++) {
         m_voxels[i] = deformedVoxels[i];
     }
-    // maybe loop through visited and interpolate to fill in the gaps (hacky?)
 }
