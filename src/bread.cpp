@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
-// #include <omp.h>
+#include <omp.h>
 
 #include <QString>
 #include <QFile>
@@ -21,7 +21,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bread_64.binvox";
+    const std::string& filepath = "meshes-binvox/bread_128.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -93,7 +93,7 @@ void Bread::init() {
 
     distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 7);
+    generateBubbles(1, 9);
 
     std::vector<bool> voxelCopy = m_voxels;
     // // do cross section
@@ -256,7 +256,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 84; // resolution of proving vol in each spatial coordinate
+    int r = 128; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
