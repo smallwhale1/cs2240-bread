@@ -25,8 +25,8 @@ void Bread::constructMockTemp() {
             // } else {
 
                 temp = minTemp + ((maxRadius - m_distance_voxels[i]) / maxRadius) * (maxTemp - minTemp);
-                std::cout << "distance: " << m_distance_voxels[i] << std::endl;
-                std::cout << "temp:  " << temp << std::endl;
+                // std::cout << "distance: " << m_distance_voxels[i] << std::endl;
+                // std::cout << "temp:  " << temp << std::endl;
             // }
         }
         m_mock_temp[i] = temp;
@@ -181,58 +181,52 @@ void Bread::convolveGaussian() {
         m_mock_temp[idx] = 0;
         int x, y, z;
         voxelToIndices(idx, x, y, z);
-        for (int i = -1 * m_filterRadius; i <= m_filterRadius; i++) {
-            for (int j = -1 * m_filterRadius; j <= m_filterRadius; j++) {
-                float temp = 0;
-                for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
-                    int idx_prime;
-                    int x_prime = fmax(0, fmin(x + k, dimX - 1));
-                    int y_prime = fmax(0, fmin(y + j, dimY - 1));
-                    int z_prime = fmax(0, fmin(z + i, dimZ - 1));
-                    indicesToVoxel(x_prime, y_prime, z_prime, idx_prime);
 
-                    temp += tempCopy[idx_prime] * m_gaussianKernel[k];
-                }
-                m_mock_temp[idx] += temp / 3;
-            }
+        float temp = 0;
+        for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
+            int idx_prime;
+            int x_prime = fmax(0, fmin(x + k, dimX - 1));
+            indicesToVoxel(x_prime, y, z, idx_prime);
+
+            temp += tempCopy[idx_prime] * m_gaussianKernel[k];
         }
+        m_mock_temp[idx] += temp;
+    }
 
-        for (int i = -1 * m_filterRadius; i <= m_filterRadius; i++) {
-            for (int j = -1 * m_filterRadius; j <= m_filterRadius; j++) {
-                float temp = 0;
-                for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
-                    int idx_prime;
-                    int x_prime = fmax(0, fmin(x + i, dimX - 1));
-                    int y_prime = fmax(0, fmin(y + k, dimY - 1));
-                    int z_prime = fmax(0, fmin(z + j, dimZ - 1));
-                    indicesToVoxel(x_prime, y_prime, z_prime, idx_prime);
+    tempCopy = m_mock_temp;
 
-                    temp += tempCopy[idx_prime] * m_gaussianKernel[k];
-                }
-                m_mock_temp[idx] += temp / 3;
-            }
+    for (int idx = 0; idx < m_mock_temp.size(); idx++) {
+        m_mock_temp[idx] = 0;
+        int x, y, z;
+        voxelToIndices(idx, x, y, z);
+
+        float temp = 0;
+        for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
+            int idx_prime;
+            int y_prime = fmax(0, fmin(y + k, dimY - 1));
+            indicesToVoxel(x, y_prime, z, idx_prime);
+
+            temp += tempCopy[idx_prime] * m_gaussianKernel[k];
         }
+        m_mock_temp[idx] += temp;
+    }
 
-        for (int i = -1 * m_filterRadius; i <= m_filterRadius; i++) {
-            for (int j = -1 * m_filterRadius; j <= m_filterRadius; j++) {
-                float temp = 0;
-                for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
-                    int idx_prime;
-                    int x_prime = fmax(0, fmin(x + j, dimX - 1));
-                    int y_prime = fmax(0, fmin(y + i, dimY - 1));
-                    int z_prime = fmax(0, fmin(z + k, dimZ - 1));
-                    indicesToVoxel(x_prime, y_prime, z_prime, idx_prime);
+    tempCopy = m_mock_temp;
 
-                    temp += tempCopy[idx_prime] * m_gaussianKernel[k];
-                }
-                m_mock_temp[idx] += temp / 3;
-            }
+    for (int idx = 0; idx < m_mock_temp.size(); idx++) {
+        m_mock_temp[idx] = 0;
+        int x, y, z;
+        voxelToIndices(idx, x, y, z);
+
+        float temp = 0;
+        for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
+            int idx_prime;
+            int z_prime = fmax(0, fmin(z + k, dimZ - 1));
+            indicesToVoxel(x, y, z_prime, idx_prime);
+
+            temp += tempCopy[idx_prime] * m_gaussianKernel[k];
         }
-
-
-        std::cout << tempCopy[idx] << std::endl;
-        m_mock_temp[idx] /= 9.f;
-        std::cout << m_mock_temp[idx] << std::endl;
+        m_mock_temp[idx] += temp;
     }
 }
 
@@ -251,7 +245,7 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
                 indicesToVoxel(u, v, w, index);
 
                 // warp coordinate
-                Vector3f newLoc = Vector3f(u, v, w) - (p * grad[index]);
+                Vector3f newLoc = Vector3f(u, v, w) + (p * grad[index]);
 
                 int newIndex;
                 indicesToVoxel(int(newLoc[0]), int(newLoc[1]), int(newLoc[2]), newIndex);

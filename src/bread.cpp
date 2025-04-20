@@ -115,7 +115,7 @@ void Bread::init() {
     // distanceVoxels();
     constructMockTemp();
     generateGaussianFilter();
-    // convolveGaussian();
+    convolveGaussian();
     // std::vector<std::vector<float>> gradient = calcGradient(100);
     // std::cout << gradient[0][5] << std::endl;
     // std::cout << gradient[1][5] << std::endl;
