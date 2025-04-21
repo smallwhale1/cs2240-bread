@@ -21,7 +21,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bun.binvox";
+    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -79,8 +79,11 @@ void Bread::init() {
     file.close();
 
     fillIn();
+    cout << "distance" << endl;
 
     distanceVoxels();
+
+    cout << *max(m_distance_voxels.begin(), m_distance_voxels.end()) << endl;
 
     int x, y, z;
     voxelToIndices(200, x, y, z);
@@ -113,10 +116,11 @@ void Bread::init() {
 
 
     initTemperatures();
-    initW();
+    initBake();
 
     for (int i = 0; i < bakingIterations; i++) {
         bake();
+        // temps are nan when in release mode but not in debug
     }
 
     for (int i = 0; i < m_temperatures.size(); i++) {
@@ -143,13 +147,11 @@ void Bread::distanceVoxels() {
                     int x_prime, y_prime, z_prime;
                     voxelToIndices(j, x_prime, y_prime, z_prime);
                     float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
-                    cout << currDistance << endl;
                     if (currDistance < minDistance) {
                         minDistance = currDistance;
                     }
                 }
             }
-            // cout << minDistance << endl;
             m_distance_voxels[i] = minDistance;
         }
     }
@@ -294,16 +296,16 @@ void Bread::bake(){
     float hc = 0.5f; //heat transfer coefficient for convection
 
     float sigma = 5.670374419e-8f;
-    float temp_air; //temp in air
-    float temp_surface = 25.0f; //starting temp at the surface of the dough
-    float temp_radial = 283.15; //temp at heat source
+    float temp_air = 483.15f; //temp in air
+    float temp_surface = m_temperatures[0]; //starting temp at the surface of the dough
+    float temp_radial = 2.f * temp_air; //temp at heat source
     float emissivity_product = 0.9f;
     float emissivity_radial = 0.5f; //tbh not sure but it's based on the this website and the common wire heating element in an oven of a nickel-copper mix
                                     //https://www.flukeprocessinstruments.com/en-us/service-and-support/knowledge-center/infrared-technology/emissivity-metals
 
     float asp = 1.0f; //length of the sample
     float bsp = 1.0f; //width of the sample
-    float lsp; //distance between radial source and sample, TODO: from distance mapping
+    float lsp = 20.f; //distance between radial source and sample, TODO: from distance mapping
     float a = asp / lsp;
     float b = bsp / lsp;
     float a1 = 1.0f + pow(a, 2);
@@ -334,6 +336,8 @@ void Bread::bake(){
 
     float distance = 1.f;
 
+    float w_air = 0.f; // paper says this is 0 but I expect that would change over time??
+
     std::vector<float> dtdt(m_temperatures.size(), 0.f); //change in temperature over time
     std::vector<float> dtdx(m_temperatures.size(), 0.f); //change in temperature over distance
     std::vector<float> dtdx2(m_temperatures.size(), 0.f); //change in roc of temprature over distance
@@ -343,7 +347,7 @@ void Bread::bake(){
     std::vector<float> dWdx2(m_temperatures.size(), 0.f); // derivative of dWdx
 
     // fill in dWdx
-    dWdx[0] = h_w * (m_W[0] - temp_air);
+    dWdx[0] = h_w * (m_W[0] - w_air);
     dWdx[m_W.size() - 1] = 0.f;
 
     for (int x = 0; x < m_W.size(); x++) {
@@ -379,7 +383,8 @@ void Bread::bake(){
     }
 
     // LANA maybe check this: fill in edge cases for dWdt
-    m_W[0] = m_W[1] - dWdx[0];
+    // dwdt turns out to be all 0
+    m_W[0] = m_W[1] - dWdx[0]; // this may be wrong
     m_W[m_W.size() - 1] = m_W[m_W.size() - 2];
 
     //fill up dtdx
@@ -387,10 +392,9 @@ void Bread::bake(){
 
         if(x == 0){ //outside edge of the bread
             dtdx[x] = 0.f;
-
         } else if(x == m_temperatures.size() - 1){ //inside edge of the bread
             dtdx[x] = (hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * density * diffusivity * (dWdx[0]));
-
+            // very high number
         } else { //every other internal point in the bread
             dtdx[x] = (m_temperatures[x - 1] + m_temperatures[x + 1]) / (distance * 2.f);
         }
@@ -415,6 +419,7 @@ void Bread::bake(){
         float dpdt = (new_p - m_p[x]) / distance;
         m_p[x] = new_p;
         dtdt[x] = (k * dtdx2[x]) / (new_p * specific_heat) + (lambda * dWdt[x]) / specific_heat + (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
+        // really small, basically all 0
     }
 
 
@@ -443,9 +448,10 @@ void Bread::initBake() {
 void Bread::initTemperatures(){
 
     float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
+    // float largest = 12;
     cout << largest << endl;
-    m_temperatures.resize(largest / 2);
-    m_temperatures.assign(largest / 2, 25.0f); //23 degrees celsius for every location
+    m_temperatures.resize(int(largest));
+    m_temperatures.assign(int(largest), 25.0f); //23 degrees celsius for every location
 }
 
 void calcHeatTranferCoeff(){
