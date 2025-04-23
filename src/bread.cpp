@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <omp.h>
+#include <algorithm>
 
 #include <QString>
 #include <QFile>
@@ -21,7 +22,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bread_128.binvox";
+    const std::string& filepath = "meshes-binvox/bread_64.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -57,6 +58,7 @@ void Bread::init() {
 
     m_voxels.resize(numVoxels);
     m_P.resize(numVoxels);
+    std::fill(m_P.begin(), m_P.end(), 1);
     // std::vector<bool> voxels(numVoxels);
 
     // parse data
@@ -93,7 +95,7 @@ void Bread::init() {
 
     distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 9);
+    generateBubbles(1, 7);
 
     std::vector<bool> voxelCopy = m_voxels;
     // // do cross section
@@ -110,18 +112,22 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("test-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     // distanceVoxels();
     constructMockTemp();
     generateGaussianFilter();
-    convolveGaussian();
+    // convolveGaussian();
+
     // std::vector<std::vector<float>> gradient = calcGradient(100);
     // std::cout << gradient[0][5] << std::endl;
     // std::cout << gradient[1][5] << std::endl;
     // std::cout << gradient[2][5] << std::endl;
+
     m_gradVector = calcGradient(m_mock_temp);
-    warpBubbles(m_gradVector);
+
+    // warpBubbles(m_gradVector);
+    rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
@@ -136,7 +142,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-deformed.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("test-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     cout << "done!" << endl;
 }
@@ -239,7 +245,7 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
                 if (distance <= radius) {
                     m_voxels[idx] = 0;
                     // modify P
-                    m_P[idx] = max(m_P[idx], radius);
+                    m_P[idx] = std::max(m_P[idx], radius);
                     count++;
                 } else {
                     // m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
@@ -256,7 +262,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 128; // resolution of proving vol in each spatial coordinate
+    int r = 64; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
