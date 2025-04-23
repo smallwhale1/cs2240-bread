@@ -31,12 +31,13 @@ private:
 
     // parameters
     // temperature deformation
-    float p = 4;
+    float p = 3.0;
     // rising
-    float S = 5;
+    float S = 1.05;
 
     // deformation
     void warpBubbles(std::vector<Eigen::Vector3f> grad);
+    void rise(std::vector<Eigen::Vector3f> grad);
     void constructMockTemp();
     std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
     void convolveGaussian();

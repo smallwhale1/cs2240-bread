@@ -245,7 +245,7 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
                 indicesToVoxel(u, v, w, index);
 
                 // warp coordinate
-                Vector3f newLoc = Vector3f(u, v, w) + (p * grad[index]);
+                Vector3f newLoc = Vector3f(u, v, w) - (p * grad[index]);
 
                 int newIndex;
                 indicesToVoxel(int(newLoc[0]), int(newLoc[1]), int(newLoc[2]), newIndex);
@@ -255,6 +255,89 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
                 } else {
                     deformedVoxels[index] = m_voxels[newIndex];
                 }
+            }
+        }
+    }
+
+    for (int i = 0; i < m_voxels.size(); i++) {
+        m_voxels[i] = deformedVoxels[i];
+    }
+}
+
+void Bread::rise(std::vector<Vector3f> grad) {
+    std::vector<bool> deformedVoxels;
+    deformedVoxels.assign(m_voxels.size(), 0);
+
+    // prob need to go in the other direction
+
+    for (int x = 0; x < dimX; x++) {
+        for (int y = 0; y < dimY; y++) {
+            for (int z = 0; z < dimZ; z++) {
+                int index;
+                indicesToVoxel(x, y, z, index);
+
+                // POSTIVE
+
+                // // std::cout << m_P[index] << std::endl;
+                // // rst
+                // Vector3f rst = Vector3f(x, y, z) + (m_P[index] * grad[index]);
+
+                // // TODO: bounds check
+                // int rstIndex;
+                // indicesToVoxel(int(rst[0]), int(rst[1]), int(rst[2]), rstIndex);
+
+                // if (rst[0] < 0 || rst[0] >= dimX || rst[1] < 0 || rst[1] >= dimY || rst[2] < 0 || rst[2] >= dimZ) {
+                //     deformedVoxels[index] = 0;
+                // } else {
+                //     deformedVoxels[index] = m_voxels[rstIndex];
+                // }
+
+                // // // second warp
+
+                // Vector3f xyz = rst * S * m_P[rstIndex];
+
+                // // std::cout << xyz << std::endl;
+
+                // int newIndex;
+                // indicesToVoxel(int(xyz[0]), int(xyz[1]), int(xyz[2]), newIndex);
+
+                // // may shrink idk
+
+                // if (xyz[0] < 0 || xyz[0] >= dimX || xyz[1] < 0 || xyz[1] >= dimY || xyz[2] < 0 || xyz[2] >= dimZ) {
+                //     deformedVoxels[index] = 0;
+                // } else {
+                //     deformedVoxels[index] = m_voxels[newIndex];
+                // }
+
+                // NEGATIVE
+
+                // rst
+                Vector3f rst = Vector3f(x, y, z) * (1.0 / S) * m_P[index];
+
+                // TODO: bounds check
+                int rstIndex;
+                indicesToVoxel(int(rst[0]), int(rst[1]), int(rst[2]), rstIndex);
+
+                // if (rst[0] < 0 || rst[0] >= dimX || rst[1] < 0 || rst[1] >= dimY || rst[2] < 0 || rst[2] >= dimZ) {
+                //     deformedVoxels[index] = 0;
+                // } else {
+                //     deformedVoxels[index] = m_voxels[rstIndex];
+                // }
+
+                // first warp (since backwards direction)
+
+                Vector3f uvw = rst - (m_P[rstIndex] * grad[rstIndex]);
+
+                int newIndex;
+                indicesToVoxel(int(uvw[0]), int(uvw[1]), int(uvw[2]), newIndex);
+
+
+                if (uvw[0] < 0 || uvw[0] >= dimX || uvw[1] < 0 || uvw[1] >= dimY || uvw[2] < 0 || uvw[2] >= dimZ) {
+                    deformedVoxels[index] = 0;
+                } else {
+                    deformedVoxels[index] = m_voxels[newIndex];
+                }
+
             }
         }
     }
