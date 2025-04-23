@@ -318,25 +318,25 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 int rstIndex;
                 indicesToVoxel(int(rst[0]), int(rst[1]), int(rst[2]), rstIndex);
 
-                if (rst[0] < 0 || rst[0] >= dimX || rst[1] < 0 || rst[1] >= dimY || rst[2] < 0 || rst[2] >= dimZ) {
-                    deformedVoxels[index] = 0;
-                } else {
-                    deformedVoxels[index] = m_voxels[rstIndex];
-                }
-
-                // // first warp (since backwards direction)
-
-                // Vector3f uvw = rst - (m_P[rstIndex] * grad[rstIndex]);
-
-                // int newIndex;
-                // indicesToVoxel(int(uvw[0]), int(uvw[1]), int(uvw[2]), newIndex);
-
-
-                // if (uvw[0] < 0 || uvw[0] >= dimX || uvw[1] < 0 || uvw[1] >= dimY || uvw[2] < 0 || uvw[2] >= dimZ) {
+                // if (rst[0] < 0 || rst[0] >= dimX || rst[1] < 0 || rst[1] >= dimY || rst[2] < 0 || rst[2] >= dimZ) {
                 //     deformedVoxels[index] = 0;
                 // } else {
-                //     deformedVoxels[index] = m_voxels[newIndex];
+                //     deformedVoxels[index] = m_voxels[rstIndex];
                 // }
+
+                // first warp (since backwards direction)
+
+                Vector3f uvw = rst - (m_P[rstIndex] * grad[rstIndex]);
+
+                int newIndex;
+                indicesToVoxel(int(uvw[0]), int(uvw[1]), int(uvw[2]), newIndex);
+
+
+                if (uvw[0] < 0 || uvw[0] >= dimX || uvw[1] < 0 || uvw[1] >= dimY || uvw[2] < 0 || uvw[2] >= dimZ) {
+                    deformedVoxels[index] = 0;
+                } else {
+                    deformedVoxels[index] = m_voxels[newIndex];
+                }
 
             }
         }
