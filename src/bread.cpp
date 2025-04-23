@@ -117,7 +117,7 @@ void Bread::init() {
     // distanceVoxels();
     constructMockTemp();
     generateGaussianFilter();
-    // convolveGaussian();
+    convolveGaussian();
 
     // std::vector<std::vector<float>> gradient = calcGradient(100);
     // std::cout << gradient[0][5] << std::endl;
@@ -126,7 +126,7 @@ void Bread::init() {
 
     m_gradVector = calcGradient(m_mock_temp);
 
-    // warpBubbles(m_gradVector);
+    warpBubbles(m_gradVector);
     rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
