@@ -102,14 +102,16 @@ void Bread::init() {
 
     fillIn();
 
+    // NAIVE
     // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
-    vector<Eigen::Vector3f> vertices;
-    vector<Triangle> triangles;
+    // MARCHING CUBES
+    // vector<Eigen::Vector3f> vertices;
+    // vector<Triangle> triangles;
 
-    marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
+    // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
 
-    saveOBJ("bread_mesh.obj", vertices, triangles);
+    // saveOBJ("bread_mesh.obj", vertices, triangles);
 
     // int x, y, z;
     // voxelToIndices(200, x, y, z);
@@ -121,52 +123,52 @@ void Bread::init() {
     // indicesToVoxel(x, y, z, i);
     // std::cout << "i: " << i << std::endl;
 
+    distanceVoxels();
+    generateSphere(0, 0, 0, 2);
+    generateBubbles(1, 7);
+
+    std::vector<bool> voxelCopy = m_voxels;
+    // // do cross section
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            voxelCopy[i] = 0;
+        }
+    }
+
+    writeBinvox("test.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+
     // distanceVoxels();
-    // generateSphere(0, 0, 0, 2);
-    // generateBubbles(1, 7);
+    constructMockTemp();
+    generateGaussianFilter();
+    convolveGaussian();
+    // std::vector<std::vector<float>> gradient = calcGradient(100);
+    // std::cout << gradient[0][5] << std::endl;
+    // std::cout << gradient[1][5] << std::endl;
+    // std::cout << gradient[2][5] << std::endl;
+    m_gradVector = calcGradient(m_mock_temp);
+    warpBubbles(m_gradVector);
 
-    // std::vector<bool> voxelCopy = m_voxels;
-    // // // do cross section
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     // cout << "x: " << x << endl;
-    //     // cout << "y: " << y << endl;
-    //     // cout << "z: " << z << endl;
-    //     if (y < dimY / 2) {
-    //         // cout << "hi" << endl;
-    //         // set to 0
-    //         voxelCopy[i] = 0;
-    //     }
-    // }
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            m_voxels[i] = 0;
+        }
+    }
 
-    // writeBinvox("test.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
-
-    // // distanceVoxels();
-    // constructMockTemp();
-    // generateGaussianFilter();
-    // convolveGaussian();
-    // // std::vector<std::vector<float>> gradient = calcGradient(100);
-    // // std::cout << gradient[0][5] << std::endl;
-    // // std::cout << gradient[1][5] << std::endl;
-    // // std::cout << gradient[2][5] << std::endl;
-    // m_gradVector = calcGradient(m_mock_temp);
-    // warpBubbles(m_gradVector);
-
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     // cout << "x: " << x << endl;
-    //     // cout << "y: " << y << endl;
-    //     // cout << "z: " << z << endl;
-    //     if (y < dimY / 2) {
-    //         // cout << "hi" << endl;
-    //         // set to 0
-    //         m_voxels[i] = 0;
-    //     }
-    // }
-
-    // writeBinvox("test-deformed.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("test-deformed.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     // cout << "done!" << endl;
 }
