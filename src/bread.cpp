@@ -3,7 +3,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <omp.h>
+#include "marching.h"
+// #include <omp.h>
 #include <algorithm>
 
 #include <QString>
@@ -15,7 +16,12 @@
 
 using namespace std;
 
+
 Bread::Bread() {
+}
+
+int Bread::toIndex(int x, int y, int z, int dimX, int dimY) {
+    return x + y * dimX + z * dimX * dimY;
 }
 
 void Bread::init() {
@@ -81,20 +87,41 @@ void Bread::init() {
 
     file.close();
 
+    // int dim_X = 10, dim_Y = 10, dim_Z = 10;
+    // vector<bool> voxels(dim_X * dim_Y * dim_Z, false);
+
+    // // Fill a 3x3x3 cube in the center
+    // for (int z = 4; z < 7; ++z)
+    //     for (int y = 4; y < 7; ++y)
+    //         for (int x = 4; x < 7; ++x)
+    //             voxels[toIndex(x, y, z, dim_X, dim_Y)] = true;
+
+    // extractVoxelSurfaceToOBJ(voxels, dim_X, dim_Y, dim_Z, "output.obj");
     // add padding around the edges to allow for rising
     addPadding(5);
 
     fillIn();
 
-    int x, y, z;
-    voxelToIndices(200, x, y, z);
-    std::cout << "x: " << x << std::endl;
-    std::cout << "y: " << y << std::endl;
-    std::cout << "z: " << z << std::endl;
+    // NAIVE
+    // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
-    int i;
-    indicesToVoxel(x, y, z, i);
-    std::cout << "i: " << i << std::endl;
+    // MARCHING CUBES
+    // vector<Eigen::Vector3f> vertices;
+    // vector<Triangle> triangles;
+
+    // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
+
+    // saveOBJ("bread_mesh.obj", vertices, triangles);
+
+    // int x, y, z;
+    // voxelToIndices(200, x, y, z);
+    // std::cout << "x: " << x << std::endl;
+    // std::cout << "y: " << y << std::endl;
+    // std::cout << "z: " << z << std::endl;
+
+    // int i;
+    // indicesToVoxel(x, y, z, i);
+    // std::cout << "i: " << i << std::endl;
 
     distanceVoxels();
     generateSphere(0, 0, 0, 2);
@@ -147,7 +174,7 @@ void Bread::init() {
 
     writeBinvox("test-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-    cout << "done!" << endl;
+    // cout << "done!" << endl;
 }
 
 void Bread::distanceVoxels() {

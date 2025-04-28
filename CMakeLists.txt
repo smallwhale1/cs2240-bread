@@ -56,6 +56,9 @@ add_executable(${PROJECT_NAME}
     src/bread.cpp
     src/file.cpp
     src/deformation.cpp
+    src/surface.cpp
+    src/marching.cpp
+    src/marching.h
 )
 
 # GLEW: this creates its library and allows you to `#include "GL/glew.h"`
