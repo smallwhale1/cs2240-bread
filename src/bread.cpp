@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "marching.h"
-// #include <omp.h>
+#include <omp.h>
 #include <algorithm>
 
 #include <QString>
@@ -97,6 +97,7 @@ void Bread::init() {
     //             voxels[toIndex(x, y, z, dim_X, dim_Y)] = true;
 
     // extractVoxelSurfaceToOBJ(voxels, dim_X, dim_Y, dim_Z, "output.obj");
+
     // add padding around the edges to allow for rising
     addPadding(5);
 
@@ -144,7 +145,6 @@ void Bread::init() {
 
     writeBinvox("test-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
-    distanceVoxels();
     constructMockTemp();
     generateGaussianFilter();
     convolveGaussian();
