@@ -51,6 +51,7 @@ private:
     // rising
     // stores max bubble radius at a particular voxel
     std::vector<int> m_P;
+    void addPadding(int paddingAmt);
 };
 
 #endif // BREAD_H

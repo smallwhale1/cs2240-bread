@@ -5,29 +5,31 @@
 using namespace Eigen;
 
 void Bread::constructMockTemp() {
-    // std::vector<float> mockGradients;
     m_mock_temp.resize(m_distance_voxels.size());
 
-    float maxTemp = 110.f;
-    float minTemp = 50.f;
+    float crustTemp = 110.f;
+    float outerTemp = 114.f;
+    float centerTemp = 50.f;
+
+    float crustThickness = 3.0f;
 
     float minRadius = 0.f;
     float maxRadius = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
 
-    // at the max radius, temp of max temp and interpoate to min temp
+    float effectiveMaxRadius = maxRadius - crustThickness;
+
     for (int i = 0; i < m_distance_voxels.size(); i++) {
         float temp = 0.f;
         if (m_distance_voxels[i] == -1) {
-            temp = 114.f;
+            temp = outerTemp;
+        } else if (m_distance_voxels[i] <= crustThickness) {
+            temp = crustTemp;
         } else {
-            // if (m_distance_voxels[i] <= 3) {
-            //     temp = 110;
-            // } else {
+            float distPastCrust = m_distance_voxels[i] - crustThickness;
+            temp = centerTemp + ((effectiveMaxRadius - distPastCrust) / effectiveMaxRadius) * (crustTemp - centerTemp);
 
-                temp = minTemp + ((maxRadius - m_distance_voxels[i]) / maxRadius) * (maxTemp - minTemp);
-                // std::cout << "distance: " << m_distance_voxels[i] << std::endl;
-                // std::cout << "temp:  " << temp << std::endl;
-            // }
+            if (temp < centerTemp) temp = centerTemp;
+            if (temp > crustTemp) temp = crustTemp;
         }
         m_mock_temp[i] = temp;
     }
