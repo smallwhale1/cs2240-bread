@@ -12,7 +12,6 @@ void marchingCubes(
     const std::vector<bool>& voxels,
     int dimX, int dimY, int dimZ,
     std::vector<Eigen::Vector3f>& outVertices,
-    std::vector<Eigen::Vector3f>& outNormals,
     std::vector<Triangle>& outTriangles,
     const int edgeTable[256],
     const int triTable[256][16]
@@ -21,6 +20,5 @@ void marchingCubes(
 void saveOBJ(
     const std::string& filename,
     const std::vector<Eigen::Vector3f>& vertices,
-    const std::vector<Eigen::Vector3f>& normals,
     const std::vector<Triangle>& triangles
     );

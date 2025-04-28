@@ -278,39 +278,6 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 int index;
                 indicesToVoxel(x, y, z, index);
 
-                // POSTIVE
-
-                // // std::cout << m_P[index] << std::endl;
-                // // rst
-                // Vector3f rst = Vector3f(x, y, z) + (m_P[index] * grad[index]);
-
-                // // TODO: bounds check
-                // int rstIndex;
-                // indicesToVoxel(int(rst[0]), int(rst[1]), int(rst[2]), rstIndex);
-
-                // if (rst[0] < 0 || rst[0] >= dimX || rst[1] < 0 || rst[1] >= dimY || rst[2] < 0 || rst[2] >= dimZ) {
-                //     deformedVoxels[index] = 0;
-                // } else {
-                //     deformedVoxels[index] = m_voxels[rstIndex];
-                // }
-
-                // // // second warp
-
-                // Vector3f xyz = rst * S * m_P[rstIndex];
-
-                // // std::cout << xyz << std::endl;
-
-                // int newIndex;
-                // indicesToVoxel(int(xyz[0]), int(xyz[1]), int(xyz[2]), newIndex);
-
-                // // may shrink idk
-
-                // if (xyz[0] < 0 || xyz[0] >= dimX || xyz[1] < 0 || xyz[1] >= dimY || xyz[2] < 0 || xyz[2] >= dimZ) {
-                //     deformedVoxels[index] = 0;
-                // } else {
-                //     deformedVoxels[index] = m_voxels[newIndex];
-                // }
-
                 // NEGATIVE
 
                 // rst

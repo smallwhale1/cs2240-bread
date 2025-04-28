@@ -113,8 +113,8 @@ if (APPLE)
   set(CMAKE_CXX_FLAGS "-Wno-deprecated-volatile")
 endif()
 
-# find_package(OpenMP REQUIRED)
+find_package(OpenMP REQUIRED)
 
-# if(OpenMP_CXX_FOUND)
-#     target_link_libraries(bread PRIVATE OpenMP::OpenMP_CXX)
-# endif()
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(bread PRIVATE OpenMP::OpenMP_CXX)
+endif()

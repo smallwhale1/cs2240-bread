@@ -99,20 +99,23 @@ void Bread::init() {
     // extractVoxelSurfaceToOBJ(voxels, dim_X, dim_Y, dim_Z, "output.obj");
 
     // add padding around the edges to allow for rising
-    // addPadding(5);
+    addPadding(5);
+
+    m_P.resize(m_voxels.size());
+    std::fill(m_P.begin(), m_P.end(), 1);
 
     fillIn();
 
     // NAIVE
     // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
-    vector<Eigen::Vector3f> vertices;
-    vector<Eigen::Vector3f> normals;
-    vector<Triangle> triangles;
+    // vector<Eigen::Vector3f> vertices;
+    // // vector<Eigen::Vector3f> normals;
+    // vector<Triangle> triangles;
 
-    marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, normals, triangles, edgeTable, triangleTable);
+    // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
 
-    saveOBJ("bread_mesh.obj", vertices, normals, triangles);
+    // saveOBJ("bread_mesh.obj", vertices, triangles);
 
     // int x, y, z;
     // voxelToIndices(200, x, y, z);
@@ -126,57 +129,57 @@ void Bread::init() {
 
     // BREAD LOGIC
 
-    // distanceVoxels();
-    // generateSphere(0, 0, 0, 2);
-    // generateBubbles(1, 7);
+    distanceVoxels();
+    generateSphere(0, 0, 0, 2);
+    generateBubbles(1, 7);
 
-    // std::vector<bool> voxelCopy = m_voxels;
-    // // // do cross section
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     // cout << "x: " << x << endl;
-    //     // cout << "y: " << y << endl;
-    //     // cout << "z: " << z << endl;
-    //     if (y < dimY / 2) {
-    //         // cout << "hi" << endl;
-    //         // set to 0
-    //         voxelCopy[i] = 0;
-    //     }
-    // }
+    std::vector<bool> voxelCopy = m_voxels;
+    // do cross section
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            voxelCopy[i] = 0;
+        }
+    }
 
-    // writeBinvox("test-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("test-original-warp-1-05.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
-    // constructMockTemp();
-    // generateGaussianFilter();
-    // convolveGaussian();
+    constructMockTemp();
+    generateGaussianFilter();
+    convolveGaussian();
 
     // // std::vector<std::vector<float>> gradient = calcGradient(100);
     // // std::cout << gradient[0][5] << std::endl;
     // // std::cout << gradient[1][5] << std::endl;
     // // std::cout << gradient[2][5] << std::endl;
 
-    // m_gradVector = calcGradient(m_mock_temp);
+    m_gradVector = calcGradient(m_mock_temp);
 
-    // warpBubbles(m_gradVector);
-    // // rise(m_gradVector);
+    warpBubbles(m_gradVector);
+    rise(m_gradVector);
 
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     // cout << "x: " << x << endl;
-    //     // cout << "y: " << y << endl;
-    //     // cout << "z: " << z << endl;
-    //     if (y < dimY / 2) {
-    //         // cout << "hi" << endl;
-    //         // set to 0
-    //         m_voxels[i] = 0;
-    //     }
-    // }
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            m_voxels[i] = 0;
+        }
+    }
 
-    // writeBinvox("test-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("test-warp-1-05.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-    // // cout << "done!" << endl;
+    // cout << "done!" << endl;
 }
 
 void Bread::distanceVoxels() {
@@ -330,7 +333,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 136; // resolution of proving vol in each spatial coordinate
+    int r = 144; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
