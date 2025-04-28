@@ -81,10 +81,10 @@ void Bread::init() {
 
     file.close();
 
-    fillIn();
-
     // add padding around the edges to allow for rising
+    addPadding(5);
 
+    fillIn();
 
     int x, y, z;
     voxelToIndices(200, x, y, z);
@@ -117,19 +117,19 @@ void Bread::init() {
 
     writeBinvox("test-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
-    // distanceVoxels();
+    distanceVoxels();
     constructMockTemp();
     generateGaussianFilter();
-    // convolveGaussian();
+    convolveGaussian();
 
     // std::vector<std::vector<float>> gradient = calcGradient(100);
     // std::cout << gradient[0][5] << std::endl;
     // std::cout << gradient[1][5] << std::endl;
     // std::cout << gradient[2][5] << std::endl;
 
-    // m_gradVector = calcGradient(m_mock_temp);
+    m_gradVector = calcGradient(m_mock_temp);
 
-    // warpBubbles(m_gradVector);
+    warpBubbles(m_gradVector);
     // rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
@@ -180,33 +180,35 @@ void Bread::distanceVoxels() {
 }
 
 void Bread::addPadding(int paddingAmt) {
-    int newDimX =  dimX + paddingAmt * 2;
+    int newDimX = dimX + paddingAmt * 2;
     int newDimY = dimY + paddingAmt * 2;
-    int newDimZ = dimZ += paddingAmt * 2;
+    int newDimZ = dimZ + paddingAmt * 2;
 
-    vector<bool> newVoxels(newDimX * newDimY * newDimZ);
+    vector<bool> newVoxels(newDimX * newDimY * newDimZ, false);
 
     for (int x = 0; x < newDimX; x++) {
         for (int y = 0; y < newDimY; y++) {
             for (int z = 0; z < newDimZ; z++) {
-                int oldIndX = newDimX - paddingAmt;
-                int oldIndY = newDimY - paddingAmt;
-                int oldIndZ = newDimZ - paddingAmt;
+                int oldIndX = x - paddingAmt;
+                int oldIndY = y - paddingAmt;
+                int oldIndZ = z - paddingAmt;
 
-                int newIndex;
-                indicesToVoxel(x, y, z, newIndex);
+                int newIndex = y + z * newDimZ + x * newDimX * newDimZ;
 
-                // check in bounds
-                if (oldIndX < 0 || oldIndY < 0 || oldIndZ < 0 || oldIndX >= dimX || oldIndY >= dimY || oldIndZ >= dimZ) {
+                if (oldIndX < 0 || oldIndY < 0 || oldIndZ < 0 ||
+                    oldIndX >= dimX || oldIndY >= dimY || oldIndZ >= dimZ) {
                     newVoxels[newIndex] = 0;
                 } else {
-                    newVoxels[newIndex] = voxelAt(oldIndX, oldIndY, oldIndZ);
+                    int oldIndex;
+                    indicesToVoxel(oldIndX, oldIndY, oldIndZ, oldIndex);
+                    newVoxels[newIndex] = m_voxels[oldIndex];
                 }
             }
         }
     }
 
-    m_voxels = newVoxels;
+    m_voxels = std::move(newVoxels);
+
     dimX = newDimX;
     dimY = newDimY;
     dimZ = newDimZ;
