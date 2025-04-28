@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-# set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
-# set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
+set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
+set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
 
 # Sets project name
 project(bread LANGUAGES CXX C)
