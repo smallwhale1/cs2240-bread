@@ -6,18 +6,18 @@
 using namespace std;
 using namespace Eigen;
 
-// Helper: safe voxel lookup
+// voxel lookup
 inline bool getVoxel(const vector<bool>& voxels, int x, int y, int z, int dimX, int dimY, int dimZ) {
     if (x < 0 || y < 0 || z < 0 || x >= dimX || y >= dimY || z >= dimZ) return false;
     return voxels[x + dimX * (y + dimY * z)];
 }
 
-// Helper: midpoint interpolation
+// simple interpolation (midpoint)
 Vector3f interpolate(const Vector3f& p1, const Vector3f& p2) {
     return 0.5f * (p1 + p2);
 }
 
-// Hashing for Vector3f
+// hash functions for Vector3f
 struct Vector3fHash {
     size_t operator()(const Vector3f& v) const {
         size_t h1 = hash<float>()(v.x());
@@ -29,7 +29,7 @@ struct Vector3fHash {
 
 struct Vector3fEqual {
     bool operator()(const Vector3f& a, const Vector3f& b) const {
-        return a.isApprox(b, 1e-5f); // Allow small floating point tolerance
+        return a.isApprox(b, 1e-5f); // allow small floating point error tolerance
     }
 };
 
@@ -37,6 +37,7 @@ void marchingCubes(
     const vector<bool>& voxels,
     int dimX, int dimY, int dimZ,
     vector<Vector3f>& outVertices,
+    vector<Vector3f>& outNormals,
     vector<Triangle>& outTriangles,
     const int edgeTable[256],
     const int triTable[256][16]
@@ -86,17 +87,33 @@ void marchingCubes(
                         } else {
                             idx[j] = outVertices.size();
                             outVertices.push_back(v);
+                            outNormals.push_back(Vector3f::Zero()); // Initialize normal to zero
                             vertexMap[v] = idx[j];
                         }
                     }
                     outTriangles.push_back({ idx[0], idx[1], idx[2] });
+
+                    // Add face normal contribution
+                    Vector3f p0 = outVertices[idx[0]];
+                    Vector3f p1 = outVertices[idx[1]];
+                    Vector3f p2 = outVertices[idx[2]];
+                    Vector3f faceNormal = (p1 - p0).cross(p2 - p0).normalized();
+
+                    outNormals[idx[0]] += faceNormal;
+                    outNormals[idx[1]] += faceNormal;
+                    outNormals[idx[2]] += faceNormal;
                 }
             }
         }
     }
+
+    // normalize
+    for (auto& n : outNormals) {
+        n.normalize();
+    }
 }
 
-void saveOBJ(const string& filename, const vector<Vector3f>& vertices, const vector<Triangle>& triangles) {
+void saveOBJ(const string& filename, const vector<Vector3f>& vertices, const vector<Vector3f>& normals, const vector<Triangle>& triangles) {
     ofstream file(filename);
     if (!file.is_open()) {
         throw runtime_error("Failed to open OBJ file for writing!");
@@ -105,9 +122,12 @@ void saveOBJ(const string& filename, const vector<Vector3f>& vertices, const vec
     for (const auto& v : vertices)
         file << "v " << v.x() << " " << v.y() << " " << v.z() << "\n";
 
+    for (const auto& n : normals)
+        file << "vn " << n.x() << " " << n.y() << " " << n.z() << "\n";
+
     for (const auto& t : triangles)
         file << "f "
-             << (t.v0 + 1) << " "
-             << (t.v1 + 1) << " "
-             << (t.v2 + 1) << "\n";
+             << t.v0 + 1 << "//" << t.v0 + 1 << " "
+             << t.v1 + 1 << "//" << t.v1 + 1 << " "
+             << t.v2 + 1 << "//" << t.v2 + 1 << "\n";
 }
