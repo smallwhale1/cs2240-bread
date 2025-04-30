@@ -28,11 +28,11 @@ private:
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
 
-    std::vector<float> m_temperatures;
-    std::vector<float> m_W;
-    std::vector<float> m_p;
-    float timestep = 1.f; // maybe should be like 30??
-    int bakingIterations = 20;
+    std::vector<double> m_temperatures;
+    std::vector<double> m_W;
+    std::vector<double> m_p;
+    float timestep = 30.f; // maybe should be like 30??
+    int bakingIterations = 100;
     void initTemperatures();
     void bake();
     void initBake();

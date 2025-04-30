@@ -81,9 +81,9 @@ void Bread::init() {
     fillIn();
     cout << "distance" << endl;
 
-    distanceVoxels();
+    // distanceVoxels();
 
-    cout << *max(m_distance_voxels.begin(), m_distance_voxels.end()) << endl;
+    // cout << *max(m_distance_voxels.begin(), m_distance_voxels.end()) << endl;
 
     int x, y, z;
     voxelToIndices(200, x, y, z);
@@ -120,12 +120,17 @@ void Bread::init() {
 
     for (int i = 0; i < bakingIterations; i++) {
         bake();
+        cout << "start" << endl;
+        for (int i = 0; i < m_temperatures.size(); i++) {
+            cout << m_temperatures[i] - 273.f<< endl;
+        }
+
         // temps are nan when in release mode but not in debug
     }
 
-    for (int i = 0; i < m_temperatures.size(); i++) {
-        cout << m_temperatures[i] << endl;
-    }
+    // for (int i = 0; i < m_temperatures.size(); i++) {
+    //     cout << m_temperatures[i] << endl;
+    // }
 
     cout << "done!" << endl;
 }
@@ -303,9 +308,9 @@ void Bread::bake(){
     float emissivity_radial = 0.5f; //tbh not sure but it's based on the this website and the common wire heating element in an oven of a nickel-copper mix
                                     //https://www.flukeprocessinstruments.com/en-us/service-and-support/knowledge-center/infrared-technology/emissivity-metals
 
-    float asp = 1.0f; //length of the sample
-    float bsp = 1.0f; //width of the sample
-    float lsp = 20.f; //distance between radial source and sample, TODO: from distance mapping
+    float asp = 0.1f; //length of the sample
+    float bsp = 0.2f; //width of the sample
+    float lsp = 0.5f; //distance between radial source and sample, TODO: from distance mapping
     float a = asp / lsp;
     float b = bsp / lsp;
     float a1 = 1.0f + pow(a, 2);
@@ -323,18 +328,16 @@ void Bread::bake(){
     float hr = (sigma * (pow(temp_radial, 2) + pow(temp_surface, 2)) * (temp_radial + temp_surface)) /
                ((1.0f / emissivity_product) + (1.0f / emissivity_radial) - 2.0f + (1.0f / fsp));
 
-
-
     float k = 0.07; // thermal conductivity
     float lambda = 2.257f; //latent heat of evaporation/vaporization of water (like how much heat is needs for a phase change i think)
     float diffusivity = 1.35e-10f; //liquid water diffusivity (inversely proportoinal to viscosity, basically how easily it mixes with other stuff)
-    float h_w = 1.f; // mass transfer coefficient water
-    float h_v = 1.f; // mass transfer coefficient vapor
+    // float h_w = 0.1f; // mass transfer coefficient water
+    // float h_v = 120.f; // mass transfer coefficient vapor
     float specific_heat = 3500.f; //amount of heat required to increase the temperature of a specific material by one degree
 
-    float density = 284.f; //284 of initial condition of dough, TODO: changes by 170 + 284W for each time step
+    // float density = 284.f; //284 of initial condition of dough, TODO: changes by 170 + 284W for each time step
 
-    float distance = 1.f;
+    float distance = 0.03f;
 
     float w_air = 0.f; // paper says this is 0 but I expect that would change over time??
 
@@ -347,6 +350,8 @@ void Bread::bake(){
     std::vector<float> dWdx2(m_temperatures.size(), 0.f); // derivative of dWdx
 
     // fill in dWdx
+    float h_w = 0.0014f * m_temperatures[0] + 0.27f * m_W[0] - 0.0004 * m_temperatures[0] * m_W[0] - 0.77f * m_W[0] * m_W[0];
+    // float h_w = 0.1;
     dWdx[0] = h_w * (m_W[0] - w_air);
     dWdx[m_W.size() - 1] = 0.f;
 
@@ -360,43 +365,50 @@ void Bread::bake(){
     // fill in dWdx2
     for (int x = 0; x < m_W.size(); x++) {
         if (x == 0 || x == m_W.size() - 1) {
-            continue;
+            if(x == 0){ // outside edge of the bread
+                dWdx2[x] = (dWdx[1] - dWdx[0]) / distance;
+
+            } else if(x == m_temperatures.size() - 1){ // inside edge of the bread
+                dWdx2[x] = (dWdx[x] - dWdx[x - 1]) / distance;
+            }
+        } else {
+            dWdx2[x] = (dWdx[x+1] - dWdx[x-1]) / (distance * 2.f);
         }
-        dWdx2[x] = (dWdx[x+1] - dWdx[x-1]) / (distance * 2.f);
+
     }
+
 
     // fill in dWdt
     for (int x = 0; x < m_W.size(); x++) {
-        if (x == 0 || x == m_W.size() - 1) {
-            continue;
-        }
+        // if (x == 0 || x == m_W.size() - 1) {
+        //     continue;
+        // }
         dWdt[x] = diffusivity * dWdx2[x];
     }
 
     // timestep forward
     for (int x = 0; x < m_W.size(); x++) {
-        if (x == 0 || x == m_W.size() - 1) {
-            continue;
-        }
+        // if (x == 0 || x == m_W.size() - 1) {
+        //     continue;
+        // }
         // explicit euler for now
         m_W[x] += timestep * dWdt[x];
     }
 
     // LANA maybe check this: fill in edge cases for dWdt
     // dwdt turns out to be all 0
-    m_W[0] = m_W[1] - dWdx[0]; // this may be wrong
+    m_W[0] = m_W[1] - distance * dWdx[0]; // this may be wrong
     m_W[m_W.size() - 1] = m_W[m_W.size() - 2];
 
     //fill up dtdx
     for(int x = 0; x < m_temperatures.size(); x++){
 
-        if(x == 0){ //outside edge of the bread
+        if(x == m_temperatures.size() - 1){ //inside edge of the bread
             dtdx[x] = 0.f;
-        } else if(x == m_temperatures.size() - 1){ //inside edge of the bread
-            dtdx[x] = (hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * density * diffusivity * (dWdx[0]));
-            // very high number
+        } else if(x == 0){ //outside edge of the bread
+            dtdx[x] = ((hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * m_p[x] * diffusivity * (dWdx[0]))) / (-k);
         } else { //every other internal point in the bread
-            dtdx[x] = (m_temperatures[x - 1] + m_temperatures[x + 1]) / (distance * 2.f);
+            dtdx[x] = (m_temperatures[x + 1] - m_temperatures[x - 1]) / (distance * 2.f);
         }
     }
 
@@ -409,17 +421,19 @@ void Bread::bake(){
             dtdx2[x] = (dtdx[x] - dtdx[x - 1]) / distance;
 
         } else { //every other internal point in the bread
-            dtdx2[x] = (dtdx[x - 1] + dtdx[x + 1]) / (distance * 2.f);
+            dtdx2[x] = (dtdx[x + 1] - dtdx[x - 1]) / (distance * 2.f);
         }
     }
 
     // fill up dtdt
     for (int x = 0; x < dtdt.size(); x++) {
-        float new_p = 170.f + (284.f * m_W[x]);
-        float dpdt = (new_p - m_p[x]) / distance;
+        double new_p = 170.f + (284.f * m_W[x]);
+        double dpdt = (new_p - m_p[x]) / distance;
         m_p[x] = new_p;
-        dtdt[x] = (k * dtdx2[x]) / (new_p * specific_heat) + (lambda * dWdt[x]) / specific_heat + (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
-        // really small, basically all 0
+        double t1 = (k * dtdx2[x]) / (new_p * specific_heat);
+        double t2 = (lambda * dWdt[x]) / specific_heat;
+        double t3 = (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
+        dtdt[x] = t1 + t2 + t3;
     }
 
 
@@ -427,11 +441,6 @@ void Bread::bake(){
     for (int x = 0; x < m_temperatures.size(); x++) {
         m_temperatures[x] += timestep * dtdt[x];
     }
-
-    // update m_p
-    // for (int x = 0; x < m_p.size(); x++) {
-    //     m_p[x] = 170.f + 284.f * m_W[x];
-    // }
 }
 
 void Bread::initBake() {
@@ -447,11 +456,11 @@ void Bread::initBake() {
 
 void Bread::initTemperatures(){
 
-    float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
-    // float largest = 12;
-    cout << largest << endl;
+    // float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
+    float largest = 12;
+    // cout << largest << endl;
     m_temperatures.resize(int(largest));
-    m_temperatures.assign(int(largest), 25.0f); //23 degrees celsius for every location
+    m_temperatures.assign(int(largest), 298.0f); //23 degrees celsius for every location
 }
 
 void calcHeatTranferCoeff(){
