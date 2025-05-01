@@ -37,6 +37,7 @@ private:
     void bake();
     void initBake();
     float prevDensity;
+    void heatMap();
 
 };
 

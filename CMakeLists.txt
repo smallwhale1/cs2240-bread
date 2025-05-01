@@ -21,10 +21,12 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS OpenGL)
 find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
 find_package(Qt6 REQUIRED COMPONENTS Gui)
+find_package(OpenCV REQUIRED)
 
 # Allows you to include files from within those directories, without prefixing their filepaths
 include_directories(src)
 include_directories(libs)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Specifies .cpp and .h files to be passed to the compiler
 add_executable(${PROJECT_NAME}
@@ -74,6 +76,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
     Eigen
 )
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS})
+
 
 # Specifies other files
 qt6_add_resources(${PROJECT_NAME} "Resources"

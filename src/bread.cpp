@@ -11,6 +11,7 @@
 #include <QRegularExpression>
 #include <QFileInfo>
 #include <cmath>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 
@@ -79,52 +80,41 @@ void Bread::init() {
     file.close();
 
     fillIn();
-    cout << "distance" << endl;
 
     distanceVoxels();
 
-    int x, y, z;
-    voxelToIndices(200, x, y, z);
-    std::cout << "x: " << x << std::endl;
-    std::cout << "y: " << y << std::endl;
-    std::cout << "z: " << z << std::endl;
+    // generateSphere(0, 0, 0, 2);
+    // generateBubbles(1, 10);
 
-    int i;
-    indicesToVoxel(x, y, z, i);
-    std::cout << "i: " << i << std::endl;
-
-    generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 10);
-
-    // do cross section
-    for (int i = 0; i < m_voxels.size(); i++) {
-        int x, y, z;
-        voxelToIndices(i, x, y, z);
-        // cout << "x: " << x << endl;
-        // cout << "y: " << y << endl;
-        // cout << "z: " << z << endl;
-        if (y < 128) {
-            // cout << "hi" << endl;
-            // set to 0
-            m_voxels[i] = 0;
-        }
-    }
+    // // do cross section
+    // for (int i = 0; i < m_voxels.size(); i++) {
+    //     int x, y, z;
+    //     voxelToIndices(i, x, y, z);
+    //     // cout << "x: " << x << endl;
+    //     // cout << "y: " << y << endl;
+    //     // cout << "z: " << z << endl;
+    //     if (y < 128) {
+    //         // cout << "hi" << endl;
+    //         // set to 0
+    //         m_voxels[i] = 0;
+    //     }
+    // }
 
     // writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
-
 
     initTemperatures();
     initBake();
 
     for (int i = 0; i < bakingIterations; i++) {
         bake();
-
         // temps are nan when in release mode but not in debug
     }
 
     for (int i = 0; i < m_temperatures.size(); i++) {
         cout << m_temperatures[i] - 273.15 << endl;
     }
+
+    heatMap();
 
     cout << "done!" << endl;
 }
@@ -137,21 +127,41 @@ void Bread::distanceVoxels() {
         } else {
             int x, y, z;
             voxelToIndices(i, x, y, z);
-            // cout << "x: " << x << endl;
-            // cout << "y: " << y << endl;
-            // cout << "z: " << z << endl;
-            float minDistance = dimX * dimY * dimZ;
-            for (int j = 0; j < m_voxels.size(); j++) {
-                if (i != j && !m_voxels[j]) {
-                    int x_prime, y_prime, z_prime;
-                    voxelToIndices(j, x_prime, y_prime, z_prime);
-                    float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
-                    if (currDistance < minDistance) {
-                        minDistance = currDistance;
+            if (x == 0 || y == 0 || z == 0 || x == dimX - 1 || y == dimY - 1 || z == dimZ - 1) {
+                m_distance_voxels[i] = 1.f;
+            } else {
+                float minDistance = dimX * dimY * dimZ;
+                for (int j = 0; j < m_voxels.size(); j++) {
+                    if (i != j && !m_voxels[j]) {
+                        int x_prime, y_prime, z_prime;
+                        voxelToIndices(j, x_prime, y_prime, z_prime);
+                        float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
+                        if (currDistance < minDistance) {
+                            minDistance = currDistance;
+                        }
                     }
                 }
+                if (x + 1 < minDistance) {
+                    minDistance = x + 1;
+                }
+                if (y + 1 < minDistance) {
+                    minDistance = y + 1;
+                }
+                if (y + 1 < minDistance) {
+                    minDistance = z + 1;
+                }
+                if (dimX - x < minDistance) {
+                    minDistance = dimX - x;
+                }
+                if (dimY - y < minDistance) {
+                    minDistance = dimY - y;
+                }
+                if (dimZ - z < minDistance) {
+                    minDistance = dimZ - z;
+                }
+                m_distance_voxels[i] = minDistance;
             }
-            m_distance_voxels[i] = minDistance;
+
         }
     }
 }
@@ -405,9 +415,6 @@ void Bread::bake(){
         double new_p = 170.0 + (284.0 * m_W[x]);
         double dpdt = (new_p - m_p[x]) / distance;
         m_p[x] = new_p;
-        double t1 = (k * dtdx2[x]) / (new_p * specific_heat);
-        double t2 = (lambda * dWdt[x]) / specific_heat;
-        double t3 = (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
         dtdt[x] = (k * dtdx2[x]) / (new_p * specific_heat) + (lambda * dWdt[x]) / specific_heat + (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
     }
 
@@ -419,7 +426,6 @@ void Bread::bake(){
 
 void Bread::initBake() {
     // fill m_W
-    // m_W.resize(m_temperatures.size());
     m_W.assign(m_temperatures.size(), 0.4);
 
     // fill m_p
@@ -437,8 +443,48 @@ void Bread::initTemperatures(){
     m_temperatures.assign(int(largest), 298.0); //23 degrees celsius for every location
 }
 
-void calcHeatTranferCoeff(){
+void Bread::heatMap() {
+    std::vector<std::vector<double>> data;
+    int y = dimY/2;
+    int rows = dimZ;
+    int cols = dimX;
+
+    for (int i = rows - 1; i > -1; i--) {
+        std::vector<double> row;
+        for (int j = 0; j < cols; j++) {
+            float dist = m_distance_voxels[j * dimX * dimZ + i * dimZ + y];
+            if (dist > 0.f) {
+                int idx = dist - 1;
+                row.push_back(m_temperatures[idx] - 273.15);
+                cout << idx << endl;
+            } else {
+                row.push_back(145.0);
+            }
+
+            // if (voxelAt(j, y, i)) {
+            //     row.push_back(1.0);
+            // } else {
+            //     row.push_back(0.0);
+            // }
+
+        }
+        data.push_back(row);
+    }
 
 
+    cv::Mat mat(rows, cols, CV_32F);
 
+    // Normalize data and fill matrix
+    for (int i = 0; i < rows; ++i)
+        for (int j = 0; j < cols; ++j)
+            mat.at<float>(i, j) = data[i][j];
+
+    cv::Mat normalized;
+    cv::normalize(mat, normalized, 0, 255, cv::NORM_MINMAX);
+    normalized.convertTo(normalized, CV_8U);
+
+    cv::Mat colorMap;
+    cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
+    cv::imshow("Heatmap", colorMap);
+    cv::waitKey(0);
 }
