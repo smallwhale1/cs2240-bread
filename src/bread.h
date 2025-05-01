@@ -351,6 +351,16 @@ private:
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
     };
     void addPadding(int paddingAmt);
+    std::vector<double> m_temperatures;
+    std::vector<double> m_W;
+    std::vector<double> m_p;
+    double timestep = 30.0; // maybe should be like 30??
+    int bakingIterations = 100;
+    void initTemperatures();
+    void bake();
+    void initBake();
+    float prevDensity;
+    void heatMap();
 };
 
 #endif // BREAD_H
