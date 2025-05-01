@@ -148,11 +148,11 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-original-no-rise.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("test-original-128.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     constructMockTemp();
-    generateGaussianFilter();
-    convolveGaussian();
+    // generateGaussianFilter();
+    // convolveGaussian();
 
     // // std::vector<std::vector<float>> gradient = calcGradient(100);
     // // std::cout << gradient[0][5] << std::endl;
@@ -162,7 +162,7 @@ void Bread::init() {
     m_gradVector = calcGradient(m_mock_temp);
 
     warpBubbles(m_gradVector);
-    // rise(m_gradVector);
+    rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
@@ -177,7 +177,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-no-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     // cout << "done!" << endl;
 }
@@ -333,7 +333,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 144; // resolution of proving vol in each spatial coordinate
+    int r = 128; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {

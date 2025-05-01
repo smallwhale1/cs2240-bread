@@ -28,8 +28,7 @@ void Bread::constructMockTemp() {
             float distPastCrust = m_distance_voxels[i] - crustThickness;
             temp = centerTemp + ((effectiveMaxRadius - distPastCrust) / effectiveMaxRadius) * (crustTemp - centerTemp);
 
-            if (temp < centerTemp) temp = centerTemp;
-            if (temp > crustTemp) temp = crustTemp;
+            temp = std::min(std::max(temp, centerTemp), crustTemp);
         }
         m_mock_temp[i] = temp;
     }
@@ -267,10 +266,7 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
 }
 
 void Bread::rise(std::vector<Vector3f> grad) {
-    std::vector<bool> deformedVoxels;
-    deformedVoxels.assign(m_voxels.size(), 0);
-
-    // prob need to go in the other direction
+    std::vector<bool> deformedVoxels(m_voxels.size(), false);
 
     for (int x = 0; x < dimX; x++) {
         for (int y = 0; y < dimY; y++) {
@@ -278,43 +274,48 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 int index;
                 indicesToVoxel(x, y, z, index);
 
-                // NEGATIVE
+                if (index < 0 || index >= m_voxels.size())
+                    continue;
 
-                // rst
-                Vector3f rst = Vector3f(x, y, z) * (1.0 / S) * m_P[index];
+                Vector3f rst = Vector3f(x, y, z) * (1.0f / S) * m_P[index];
 
-                // TODO: bounds check
+                int rstX = static_cast<int>(rst[0]);
+                int rstY = static_cast<int>(rst[1]);
+                int rstZ = static_cast<int>(rst[2]);
+
+                if (rstX < 0 || rstX >= dimX ||
+                    rstY < 0 || rstY >= dimY ||
+                    rstZ < 0 || rstZ >= dimZ)
+                    continue;
+
                 int rstIndex;
-                indicesToVoxel(int(rst[0]), int(rst[1]), int(rst[2]), rstIndex);
+                indicesToVoxel(rstX, rstY, rstZ, rstIndex);
 
-                // if (rst[0] < 0 || rst[0] >= dimX || rst[1] < 0 || rst[1] >= dimY || rst[2] < 0 || rst[2] >= dimZ) {
-                //     deformedVoxels[index] = 0;
-                // } else {
-                //     deformedVoxels[index] = m_voxels[rstIndex];
-                // }
+                if (rstIndex < 0 || rstIndex >= grad.size())
+                    continue;
 
-                // first warp (since backwards direction)
+                Vector3f uvw = rst - m_P[rstIndex] * grad[rstIndex];
 
-                Vector3f uvw = rst - (m_P[rstIndex] * grad[rstIndex]);
+                int uvwX = static_cast<int>(uvw[0]);
+                int uvwY = static_cast<int>(uvw[1]);
+                int uvwZ = static_cast<int>(uvw[2]);
+
+                if (uvwX < 0 || uvwX >= dimX ||
+                    uvwY < 0 || uvwY >= dimY ||
+                    uvwZ < 0 || uvwZ >= dimZ)
+                    continue;
 
                 int newIndex;
-                indicesToVoxel(int(uvw[0]), int(uvw[1]), int(uvw[2]), newIndex);
+                indicesToVoxel(uvwX, uvwY, uvwZ, newIndex);
 
+                if (newIndex < 0 || newIndex >= m_voxels.size())
+                    continue;
 
-                if (uvw[0] < 0 || uvw[0] >= dimX || uvw[1] < 0 || uvw[1] >= dimY || uvw[2] < 0 || uvw[2] >= dimZ) {
-                    deformedVoxels[index] = 0;
-                } else {
-                    // extra bounds check
-                    if (newIndex >= 0 && newIndex < m_voxels.size()) {
-                        deformedVoxels[index] = m_voxels[newIndex];
-                    }
-                }
-
+                deformedVoxels[index] = m_voxels[newIndex];
             }
         }
     }
 
-    for (int i = 0; i < m_voxels.size(); i++) {
-        m_voxels[i] = deformedVoxels[i];
-    }
+    m_voxels = std::move(deformedVoxels);
 }
+
