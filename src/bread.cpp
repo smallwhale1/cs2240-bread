@@ -115,7 +115,7 @@ void Bread::init() {
 
     // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
 
-    // saveOBJ("bread_mesh.obj", vertices, triangles);
+    // saveOBJ("bread_mesh_128.obj", vertices, triangles);
 
     // int x, y, z;
     // voxelToIndices(200, x, y, z);
@@ -148,7 +148,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-original-warp-1-05.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("test-original-no-rise.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     constructMockTemp();
     generateGaussianFilter();
@@ -162,7 +162,7 @@ void Bread::init() {
     m_gradVector = calcGradient(m_mock_temp);
 
     warpBubbles(m_gradVector);
-    rise(m_gradVector);
+    // rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
@@ -177,7 +177,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-warp-1-05.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("test-no-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     // cout << "done!" << endl;
 }

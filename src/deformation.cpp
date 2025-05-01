@@ -304,7 +304,10 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 if (uvw[0] < 0 || uvw[0] >= dimX || uvw[1] < 0 || uvw[1] >= dimY || uvw[2] < 0 || uvw[2] >= dimZ) {
                     deformedVoxels[index] = 0;
                 } else {
-                    deformedVoxels[index] = m_voxels[newIndex];
+                    // extra bounds check
+                    if (newIndex >= 0 && newIndex < m_voxels.size()) {
+                        deformedVoxels[index] = m_voxels[newIndex];
+                    }
                 }
 
             }
