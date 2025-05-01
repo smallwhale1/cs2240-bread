@@ -31,7 +31,7 @@ private:
     std::vector<double> m_temperatures;
     std::vector<double> m_W;
     std::vector<double> m_p;
-    float timestep = 30.f; // maybe should be like 30??
+    double timestep = 30.0; // maybe should be like 30??
     int bakingIterations = 100;
     void initTemperatures();
     void bake();
