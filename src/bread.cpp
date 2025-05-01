@@ -3,11 +3,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
-<<<<<<< HEAD
 #include "marching.h"
 #include <omp.h>
-=======
->>>>>>> main
 #include <algorithm>
 
 #include <QString>
@@ -110,7 +107,6 @@ void Bread::init() {
 
     fillIn();
 
-<<<<<<< HEAD
     // NAIVE
     // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
@@ -184,9 +180,6 @@ void Bread::init() {
 
     writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
-    // cout << "done!" << endl;
-=======
-    distanceVoxels();
 
     // generateSphere(0, 0, 0, 2);
     // generateBubbles(1, 10);
@@ -222,7 +215,6 @@ void Bread::init() {
     heatMap();
 
     cout << "done!" << endl;
->>>>>>> main
 }
 
 void Bread::distanceVoxels() {
@@ -396,11 +388,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-<<<<<<< HEAD
     int r = 128; // resolution of proving vol in each spatial coordinate
-=======
-    int r = 256; // resolution of proving vol in each spatial coordinate
->>>>>>> main
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
@@ -438,13 +426,6 @@ void Bread::fillIn() {
                             for (int w = startZ + 1; w < z; w++) {
                                 int index;
                                 indicesToVoxel(x, y, w, index);
-<<<<<<< HEAD
-                                bool zz = m_voxels[index];
-                                if (m_voxels[index] == 0) {
-                                   // cout << "filling in" << endl;
-                                }
-=======
->>>>>>> main
                                 m_voxels[index] = 1;
                             }
                         }
