@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
+set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
+set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
+
 # Sets project name
 project(bread LANGUAGES CXX C)
 
@@ -54,6 +57,10 @@ add_executable(${PROJECT_NAME}
     src/bread.h
     src/bread.cpp
     src/file.cpp
+    src/deformation.cpp
+    src/surface.cpp
+    src/marching.cpp
+    src/marching.h
 )
 
 # GLEW: this creates its library and allows you to `#include "GL/glew.h"`
@@ -109,4 +116,10 @@ endif()
 # Set this flag to silence warnings on MacOS
 if (APPLE)
   set(CMAKE_CXX_FLAGS "-Wno-deprecated-volatile")
+endif()
+
+find_package(OpenMP REQUIRED)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(bread PRIVATE OpenMP::OpenMP_CXX)
 endif()

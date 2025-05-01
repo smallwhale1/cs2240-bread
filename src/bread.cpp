@@ -3,6 +3,11 @@
 #include <fstream>
 #include <string>
 #include <vector>
+<<<<<<< HEAD
+#include "marching.h"
+#include <omp.h>
+=======
+>>>>>>> main
 #include <algorithm>
 
 #include <QString>
@@ -15,14 +20,19 @@
 
 using namespace std;
 
+
 Bread::Bread() {
+}
+
+int Bread::toIndex(int x, int y, int z, int dimX, int dimY) {
+    return x + y * dimX + z * dimX * dimY;
 }
 
 void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
+    const std::string& filepath = "meshes-binvox/bread_128.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -57,6 +67,8 @@ void Bread::init() {
     int numVoxels = dimX * dimY * dimZ;
 
     m_voxels.resize(numVoxels);
+    m_P.resize(numVoxels);
+    std::fill(m_P.begin(), m_P.end(), 1);
     // std::vector<bool> voxels(numVoxels);
 
     // parse data
@@ -79,8 +91,101 @@ void Bread::init() {
 
     file.close();
 
+    // int dim_X = 10, dim_Y = 10, dim_Z = 10;
+    // vector<bool> voxels(dim_X * dim_Y * dim_Z, false);
+
+    // // Fill a 3x3x3 cube in the center
+    // for (int z = 4; z < 7; ++z)
+    //     for (int y = 4; y < 7; ++y)
+    //         for (int x = 4; x < 7; ++x)
+    //             voxels[toIndex(x, y, z, dim_X, dim_Y)] = true;
+
+    // extractVoxelSurfaceToOBJ(voxels, dim_X, dim_Y, dim_Z, "output.obj");
+
+    // add padding around the edges to allow for rising
+    addPadding(5);
+
+    m_P.resize(m_voxels.size());
+    std::fill(m_P.begin(), m_P.end(), 1);
+
     fillIn();
 
+<<<<<<< HEAD
+    // NAIVE
+    // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
+
+    // vector<Eigen::Vector3f> vertices;
+    // // vector<Eigen::Vector3f> normals;
+    // vector<Triangle> triangles;
+
+    // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
+
+    // saveOBJ("bread_mesh_128.obj", vertices, triangles);
+
+    // int x, y, z;
+    // voxelToIndices(200, x, y, z);
+    // std::cout << "x: " << x << std::endl;
+    // std::cout << "y: " << y << std::endl;
+    // std::cout << "z: " << z << std::endl;
+
+    // int i;
+    // indicesToVoxel(x, y, z, i);
+    // std::cout << "i: " << i << std::endl;
+
+    // BREAD LOGIC
+
+    distanceVoxels();
+    generateSphere(0, 0, 0, 2);
+    generateBubbles(1, 7);
+
+    std::vector<bool> voxelCopy = m_voxels;
+    // do cross section
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            voxelCopy[i] = 0;
+        }
+    }
+
+    writeBinvox("test-original-128.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+
+    constructMockTemp();
+    // generateGaussianFilter();
+    // convolveGaussian();
+
+    // // std::vector<std::vector<float>> gradient = calcGradient(100);
+    // // std::cout << gradient[0][5] << std::endl;
+    // // std::cout << gradient[1][5] << std::endl;
+    // // std::cout << gradient[2][5] << std::endl;
+
+    m_gradVector = calcGradient(m_mock_temp);
+
+    warpBubbles(m_gradVector);
+    rise(m_gradVector);
+
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            m_voxels[i] = 0;
+        }
+    }
+
+    writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+
+    // cout << "done!" << endl;
+=======
     distanceVoxels();
 
     // generateSphere(0, 0, 0, 2);
@@ -117,10 +222,13 @@ void Bread::init() {
     heatMap();
 
     cout << "done!" << endl;
+>>>>>>> main
 }
 
 void Bread::distanceVoxels() {
     m_distance_voxels.resize(m_voxels.size());
+
+    #pragma omp parallel for
     for (int i = 0; i < m_voxels.size(); i++) {
         if (!m_voxels[i]) {
             m_distance_voxels[i] = 0.f;
@@ -164,6 +272,41 @@ void Bread::distanceVoxels() {
 
         }
     }
+}
+
+void Bread::addPadding(int paddingAmt) {
+    int newDimX = dimX + paddingAmt * 2;
+    int newDimY = dimY + paddingAmt * 2;
+    int newDimZ = dimZ + paddingAmt * 2;
+
+    vector<bool> newVoxels(newDimX * newDimY * newDimZ, false);
+
+    for (int x = 0; x < newDimX; x++) {
+        for (int y = 0; y < newDimY; y++) {
+            for (int z = 0; z < newDimZ; z++) {
+                int oldIndX = x - paddingAmt;
+                int oldIndY = y - paddingAmt;
+                int oldIndZ = z - paddingAmt;
+
+                int newIndex = y + z * newDimZ + x * newDimX * newDimZ;
+
+                if (oldIndX < 0 || oldIndY < 0 || oldIndZ < 0 ||
+                    oldIndX >= dimX || oldIndY >= dimY || oldIndZ >= dimZ) {
+                    newVoxels[newIndex] = 0;
+                } else {
+                    int oldIndex;
+                    indicesToVoxel(oldIndX, oldIndY, oldIndZ, oldIndex);
+                    newVoxels[newIndex] = m_voxels[oldIndex];
+                }
+            }
+        }
+    }
+
+    m_voxels = std::move(newVoxels);
+
+    dimX = newDimX;
+    dimY = newDimY;
+    dimZ = newDimZ;
 }
 
 void Bread::voxelToIndices(int index, int &x, int &y, int &z) {
@@ -232,8 +375,11 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
                 // m_voxels[idx] = 1;
 
                 // std::cout << distance << std::endl; // uncomment for checking that distance calculations are correct
-                if (distance <= radius) {
+                // add some padding around the crust
+                if (distance <= radius && m_distance_voxels[idx] >= 3) {
                     m_voxels[idx] = 0;
+                    // modify P
+                    m_P[idx] = std::max(m_P[idx], radius);
                     count++;
                 } else {
                     // m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
@@ -250,7 +396,11 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
+<<<<<<< HEAD
+    int r = 128; // resolution of proving vol in each spatial coordinate
+=======
     int r = 256; // resolution of proving vol in each spatial coordinate
+>>>>>>> main
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
@@ -288,6 +438,13 @@ void Bread::fillIn() {
                             for (int w = startZ + 1; w < z; w++) {
                                 int index;
                                 indicesToVoxel(x, y, w, index);
+<<<<<<< HEAD
+                                bool zz = m_voxels[index];
+                                if (m_voxels[index] == 0) {
+                                   // cout << "filling in" << endl;
+                                }
+=======
+>>>>>>> main
                                 m_voxels[index] = 1;
                             }
                         }
