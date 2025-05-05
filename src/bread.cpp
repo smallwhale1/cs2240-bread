@@ -206,6 +206,10 @@ void Bread::init() {
     for (int i = 0; i < bakingIterations; i++) {
         bake();
         // temps are nan when in release mode but not in debug
+
+        if (m_animate) {
+            writeBinvox("test-128-bake-iter-" + std::to_string(i) + ".binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+        }
     }
 
     for (int i = 0; i < m_temperatures.size(); i++) {

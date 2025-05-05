@@ -356,6 +356,7 @@ private:
     std::vector<double> m_p;
     double timestep = 30.0; // maybe should be like 30??
     int bakingIterations = 100;
+    bool m_animate = false; // decide if we're rendering frames of the animation
     void initTemperatures();
     void bake();
     void initBake();
