@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "marching.h"
-#include <omp.h>
+// #include <omp.h>
 #include <algorithm>
 
 #include <QString>
@@ -82,9 +82,6 @@ void Bread::init() {
         auto x = 1;
     }
 
-    // if (index != numVoxels) {
-    //     cout << "not matched" << endl;
-    // }
 
     file.close();
 
@@ -135,6 +132,23 @@ void Bread::init() {
     distanceVoxels();
     generateSphere(0, 0, 0, 2);
     generateBubbles(1, 9);
+
+    std::vector<bool> voxelCopy = m_voxels;
+    // do cross section
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            voxelCopy[i] = 0;
+        }
+    }
+
+    writeBinvox("test-original-128.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     initTemperatures();
     initBake();
@@ -197,6 +211,36 @@ void Bread::init() {
     // }
 
     // writeBinvox("128-rise-fix.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    constructTemp();
+    // generateGaussianFilter();
+    // convolveGaussian();
+
+    // // std::vector<std::vector<float>> gradient = calcGradient(100);
+    // // std::cout << gradient[0][5] << std::endl;
+    // // std::cout << gradient[1][5] << std::endl;
+    // // std::cout << gradient[2][5] << std::endl;
+
+    m_gradVector = calcGradient(m_temp);
+
+    warpBubbles(m_gradVector);
+    rise(m_gradVector);
+
+    for (int i = 0; i < m_voxels.size(); i++) {
+        int x, y, z;
+        voxelToIndices(i, x, y, z);
+        // cout << "x: " << x << endl;
+        // cout << "y: " << y << endl;
+        // cout << "z: " << z << endl;
+        if (y < dimY / 2) {
+            // cout << "hi" << endl;
+            // set to 0
+            m_voxels[i] = 0;
+        }
+    }
+
+    writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+
+    cout << "done!" << endl;
 }
 
 void Bread::distanceVoxels() {
@@ -371,7 +415,6 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
 
     // see page 9 for some constants. currently using baguette settings
     int r = 128; // resolution of proving vol in each spatial coordinate
-
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
