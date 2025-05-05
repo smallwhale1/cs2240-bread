@@ -82,9 +82,6 @@ void Bread::init() {
         auto x = 1;
     }
 
-    // if (index != numVoxels) {
-    //     cout << "not matched" << endl;
-    // }
 
     file.close();
 
@@ -151,7 +148,20 @@ void Bread::init() {
 
     writeBinvox("test-original-128.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
-    constructMockTemp();
+    initTemperatures();
+    initBake();
+
+    for (int i = 0; i < bakingIterations; i++) {
+        bake();
+    }
+
+    for (int i = 0; i < m_temperatures.size(); i++) {
+        cout << m_temperatures[i] - 273.15 << endl;
+    }
+
+    heatMap();
+
+    constructTemp();
     // generateGaussianFilter();
     // convolveGaussian();
 
@@ -160,7 +170,7 @@ void Bread::init() {
     // // std::cout << gradient[1][5] << std::endl;
     // // std::cout << gradient[2][5] << std::endl;
 
-    m_gradVector = calcGradient(m_mock_temp);
+    m_gradVector = calcGradient(m_temp);
 
     warpBubbles(m_gradVector);
     rise(m_gradVector);
@@ -179,40 +189,6 @@ void Bread::init() {
     }
 
     writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
-
-
-    // generateSphere(0, 0, 0, 2);
-    // generateBubbles(1, 10);
-
-    // // do cross section
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     // cout << "x: " << x << endl;
-    //     // cout << "y: " << y << endl;
-    //     // cout << "z: " << z << endl;
-    //     if (y < 128) {
-    //         // cout << "hi" << endl;
-    //         // set to 0
-    //         m_voxels[i] = 0;
-    //     }
-    // }
-
-    // writeBinvox("test.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
-
-    initTemperatures();
-    initBake();
-
-    for (int i = 0; i < bakingIterations; i++) {
-        bake();
-        // temps are nan when in release mode but not in debug
-    }
-
-    for (int i = 0; i < m_temperatures.size(); i++) {
-        cout << m_temperatures[i] - 273.15 << endl;
-    }
-
-    heatMap();
 
     cout << "done!" << endl;
 }
