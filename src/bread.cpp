@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "marching.h"
-#include <omp.h>
+// #include <omp.h>
 #include <algorithm>
 
 #include <QString>
