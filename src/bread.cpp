@@ -98,8 +98,9 @@ void Bread::init() {
 
     // extractVoxelSurfaceToOBJ(voxels, dim_X, dim_Y, dim_Z, "output.obj");
 
+    // PADDING
     // add padding around the edges to allow for rising
-    addPadding(5);
+    addPadding(10);
 
     m_P.resize(m_voxels.size());
     std::fill(m_P.begin(), m_P.end(), 1);
@@ -109,13 +110,14 @@ void Bread::init() {
     // NAIVE
     // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
+    // // MARCHING
     // vector<Eigen::Vector3f> vertices;
     // // vector<Eigen::Vector3f> normals;
     // vector<Triangle> triangles;
 
     // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
 
-    // saveOBJ("bread_mesh_128.obj", vertices, triangles);
+    // saveOBJ("bread_mesh_128_deform.obj", vertices, triangles);
 
     // int x, y, z;
     // voxelToIndices(200, x, y, z);
@@ -131,7 +133,7 @@ void Bread::init() {
 
     distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 7);
+    generateBubbles(1, 9);
 
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
@@ -148,11 +150,11 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-original-128.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("original-128-fix.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     constructMockTemp();
-    // generateGaussianFilter();
-    // convolveGaussian();
+    generateGaussianFilter();
+    convolveGaussian();
 
     // // std::vector<std::vector<float>> gradient = calcGradient(100);
     // // std::cout << gradient[0][5] << std::endl;
@@ -177,7 +179,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("128-rise-fix.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     // cout << "done!" << endl;
 }
@@ -333,7 +335,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 128; // resolution of proving vol in each spatial coordinate
+    int r = 164; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
