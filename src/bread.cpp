@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "marching.h"
-// #include <omp.h>
+#include <omp.h>
 #include <algorithm>
 
 #include <QString>
@@ -29,7 +29,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bread_128.binvox";
+    const std::string& filepath = "meshes-binvox/bread_64.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -85,17 +85,6 @@ void Bread::init() {
 
     file.close();
 
-    // int dim_X = 10, dim_Y = 10, dim_Z = 10;
-    // vector<bool> voxels(dim_X * dim_Y * dim_Z, false);
-
-    // // Fill a 3x3x3 cube in the center
-    // for (int z = 4; z < 7; ++z)
-    //     for (int y = 4; y < 7; ++y)
-    //         for (int x = 4; x < 7; ++x)
-    //             voxels[toIndex(x, y, z, dim_X, dim_Y)] = true;
-
-    // extractVoxelSurfaceToOBJ(voxels, dim_X, dim_Y, dim_Z, "output.obj");
-
     // PADDING
     // add padding around the edges to allow for rising
     addPadding(10);
@@ -129,9 +118,19 @@ void Bread::init() {
 
     // BREAD LOGIC
 
-    distanceVoxels();
+    const std::string distFile = "distance-64.bin";
+
+    try {
+        loadDistanceVoxels(distFile);
+    } catch (...) {
+        std::cout << "calc distance" << std::endl;
+        distanceVoxels();
+        saveDistanceVoxels(distFile);
+    }
+
+    // distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 9);
+    generateBubbles(1, 7);
 
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
@@ -148,7 +147,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("test-original-128.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("64-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     initTemperatures();
     initBake();
@@ -166,81 +165,52 @@ void Bread::init() {
 
     cout << "done!" << endl;
 
-    // std::vector<bool> voxelCopy = m_voxels;
-    // // do cross section
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     // cout << "x: " << x << endl;
-    //     // cout << "y: " << y << endl;
-    //     // cout << "z: " << z << endl;
-    //     if (y < dimY / 2) {
-    //         // cout << "hi" << endl;
-    //         // set to 0
-    //         voxelCopy[i] = 0;
-    //     }
-    // }
+    constructMockTemp();
 
-    // writeBinvox("original-128-fix.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    m_gradVector = calcGradient(m_mock_temp);
 
-    // constructMockTemp();
-    // generateGaussianFilter();
+    generateGaussianFilter();
     // convolveGaussian();
-
-    // // // std::vector<std::vector<float>> gradient = calcGradient(100);
-    // // // std::cout << gradient[0][5] << std::endl;
-    // // // std::cout << gradient[1][5] << std::endl;
-    // // // std::cout << gradient[2][5] << std::endl;
-
-    // m_gradVector = calcGradient(m_mock_temp);
-
-    // warpBubbles(m_gradVector);
-    // rise(m_gradVector);
-
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     // cout << "x: " << x << endl;
-    //     // cout << "y: " << y << endl;
-    //     // cout << "z: " << z << endl;
-    //     if (y < dimY / 2) {
-    //         // cout << "hi" << endl;
-    //         // set to 0
-    //         m_voxels[i] = 0;
-    //     }
-    // }
-
-    // writeBinvox("128-rise-fix.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
-    constructTemp();
-    // generateGaussianFilter();
-    // convolveGaussian();
-
-    // // std::vector<std::vector<float>> gradient = calcGradient(100);
-    // // std::cout << gradient[0][5] << std::endl;
-    // // std::cout << gradient[1][5] << std::endl;
-    // // std::cout << gradient[2][5] << std::endl;
-
-    m_gradVector = calcGradient(m_temp);
 
     warpBubbles(m_gradVector);
-    rise(m_gradVector);
+    // rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
         voxelToIndices(i, x, y, z);
-        // cout << "x: " << x << endl;
-        // cout << "y: " << y << endl;
-        // cout << "z: " << z << endl;
         if (y < dimY / 2) {
-            // cout << "hi" << endl;
-            // set to 0
             m_voxels[i] = 0;
         }
     }
 
-    writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("64-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     cout << "done!" << endl;
+}
+
+void Bread::saveDistanceVoxels(const std::string& filepath) {
+    std::ofstream out(filepath, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("Failed to open file for writing: " + filepath);
+    }
+
+    size_t size = m_distance_voxels.size();
+    out.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    out.write(reinterpret_cast<const char*>(m_distance_voxels.data()), size * sizeof(float));
+    out.close();
+}
+
+void Bread::loadDistanceVoxels(const std::string& filepath) {
+    std::ifstream in(filepath, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Failed to open file for reading: " + filepath);
+    }
+
+    size_t size;
+    in.read(reinterpret_cast<char*>(&size), sizeof(size));
+    m_distance_voxels.resize(size);
+    in.read(reinterpret_cast<char*>(m_distance_voxels.data()), size * sizeof(float));
+    in.close();
 }
 
 void Bread::distanceVoxels() {
@@ -414,7 +384,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 128; // resolution of proving vol in each spatial coordinate
+    int r = 84; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {

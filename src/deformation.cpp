@@ -189,7 +189,8 @@ void Bread::convolveGaussian() {
             int x_prime = fmax(0, fmin(x + k, dimX - 1));
             indicesToVoxel(x_prime, y, z, idx_prime);
 
-            temp += tempCopy[idx_prime] * m_gaussianKernel[k];
+            // temp += tempCopy[idx_prime] * m_gaussianKernel[k];
+            temp += tempCopy[idx_prime] * m_gaussianKernel[k + m_filterRadius];
         }
         m_mock_temp[idx] += temp;
     }
@@ -231,13 +232,58 @@ void Bread::convolveGaussian() {
     }
 }
 
+float Bread::trilinearSampleVoxel(float x, float y, float z) {
+    int x0 = floor(x);
+    int x1 = x0 + 1;
+    int y0 = floor(y);
+    int y1 = y0 + 1;
+    int z0 = floor(z);
+    int z1 = z0 + 1;
+
+    if (x0 < 0 || x1 >= dimX || y0 < 0 || y1 >= dimY || z0 < 0 || z1 >= dimZ)
+        return 0.f;
+
+    auto getVoxFloat = [&](int xi, int yi, int zi) -> float {
+        int idx;
+        indicesToVoxel(xi, yi, zi, idx);
+        return m_voxels[idx] ? 1.0f : 0.0f;
+    };
+
+    float xd = x - x0;
+    float yd = y - y0;
+    float zd = z - z0;
+
+    // 8 corners of voxel
+    float c000 = getVoxFloat(x0, y0, z0);
+    float c001 = getVoxFloat(x0, y0, z1);
+    float c010 = getVoxFloat(x0, y1, z0);
+    float c011 = getVoxFloat(x0, y1, z1);
+    float c100 = getVoxFloat(x1, y0, z0);
+    float c101 = getVoxFloat(x1, y0, z1);
+    float c110 = getVoxFloat(x1, y1, z0);
+    float c111 = getVoxFloat(x1, y1, z1);
+
+    // interp z
+    float c00 = c000 * (1 - zd) + c001 * zd;
+    float c01 = c010 * (1 - zd) + c011 * zd;
+    float c10 = c100 * (1 - zd) + c101 * zd;
+    float c11 = c110 * (1 - zd) + c111 * zd;
+
+    // interp y
+    float c0 = c00 * (1 - yd) + c01 * yd;
+    float c1 = c10 * (1 - yd) + c11 * yd;
+
+    // interp x
+    return c0 * (1 - xd) + c1 * xd;
+}
+
 void Bread::warpBubbles(std::vector<Vector3f> grad) {
     std::vector<bool> deformedVoxels;
     deformedVoxels.assign(m_voxels.size(), 0);
     std::vector<bool> visited;
     // for each voxel
     // backmap to the original
-    // perform trilinear or some interpolation to sample original voxles
+    // perform trilinear or some interpolation to sample original voxels
 
     for (int u = 0; u < dimX; u++) {
         for (int v = 0; v < dimY; v++) {
@@ -255,6 +301,9 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
                     deformedVoxels[index] = 0;
                 } else {
                     deformedVoxels[index] = m_voxels[newIndex];
+
+                    // float sample = trilinearSampleVoxel(newLoc[0], newLoc[1], newLoc[2]);
+                    // deformedVoxels[index] = sample > 0.5f;
                 }
             }
         }
@@ -268,16 +317,15 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
 void Bread::rise(std::vector<Vector3f> grad) {
     std::vector<bool> deformedVoxels(m_voxels.size(), false);
 
-    for (int x = 0; x < dimX; x++) {
-        for (int y = 0; y < dimY; y++) {
-            for (int z = 0; z < dimZ; z++) {
-                int index;
-                indicesToVoxel(x, y, z, index);
+    for (int u = 0; u < dimX; u++) {
+        for (int v = 0; v < dimY; v++) {
+            for (int w = 0; w < dimZ; w++) {
+                int originalInd;
+                indicesToVoxel(u, v, w, originalInd);
 
-                if (index < 0 || index >= m_voxels.size())
-                    continue;
-
-                Vector3f rst = Vector3f(x, y, z) * (1.0f / S) * m_P[index];
+                // i think this is because we just applied deformation and this
+                // gets the deformed location
+                Vector3f rst = Vector3f(u, v, w) + m_P[originalInd] * grad[originalInd];
 
                 int rstX = static_cast<int>(rst[0]);
                 int rstY = static_cast<int>(rst[1]);
@@ -291,31 +339,88 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 int rstIndex;
                 indicesToVoxel(rstX, rstY, rstZ, rstIndex);
 
-                if (rstIndex < 0 || rstIndex >= grad.size())
+                if (rstIndex < 0 || rstIndex >= m_voxels.size())
                     continue;
 
-                Vector3f uvw = rst - m_P[rstIndex] * grad[rstIndex];
+                float radius = m_P[rstIndex];
+                Vector3f xyz = rst * (S * radius);
 
-                int uvwX = static_cast<int>(uvw[0]);
-                int uvwY = static_cast<int>(uvw[1]);
-                int uvwZ = static_cast<int>(uvw[2]);
+                int xyzX = static_cast<int>(xyz[0]);
+                int xyzY = static_cast<int>(xyz[1]);
+                int xyzZ = static_cast<int>(xyz[2]);
 
-                if (uvwX < 0 || uvwX >= dimX ||
-                    uvwY < 0 || uvwY >= dimY ||
-                    uvwZ < 0 || uvwZ >= dimZ)
+                if (xyzX < 0 || xyzX >= dimX ||
+                    xyzY < 0 || xyzY >= dimY ||
+                    xyzZ < 0 || xyzZ >= dimZ)
                     continue;
 
                 int newIndex;
-                indicesToVoxel(uvwX, uvwY, uvwZ, newIndex);
+                indicesToVoxel(xyzX, xyzY, xyzZ, newIndex);
 
                 if (newIndex < 0 || newIndex >= m_voxels.size())
                     continue;
 
-                deformedVoxels[index] = m_voxels[newIndex];
+                deformedVoxels[newIndex] = m_voxels[originalInd];
             }
         }
     }
 
     m_voxels = std::move(deformedVoxels);
 }
+
+
+
+// void Bread::rise(std::vector<Vector3f> grad) {
+//     std::vector<bool> deformedVoxels(m_voxels.size(), false);
+
+//     for (int x = 0; x < dimX; x++) {
+//         for (int y = 0; y < dimY; y++) {
+//             for (int z = 0; z < dimZ; z++) {
+//                 int index;
+//                 indicesToVoxel(x, y, z, index);
+
+//                 if (index < 0 || index >= m_voxels.size())
+//                     continue;
+
+//                 Vector3f rst = Vector3f(x, y, z) * (1.0f / S) * m_P[index];
+
+//                 int rstX = static_cast<int>(rst[0]);
+//                 int rstY = static_cast<int>(rst[1]);
+//                 int rstZ = static_cast<int>(rst[2]);
+
+//                 if (rstX < 0 || rstX >= dimX ||
+//                     rstY < 0 || rstY >= dimY ||
+//                     rstZ < 0 || rstZ >= dimZ)
+//                     continue;
+
+//                 int rstIndex;
+//                 indicesToVoxel(rstX, rstY, rstZ, rstIndex);
+
+//                 if (rstIndex < 0 || rstIndex >= grad.size())
+//                     continue;
+
+//                 Vector3f uvw = rst - m_P[rstIndex] * grad[rstIndex];
+
+//                 int uvwX = static_cast<int>(uvw[0]);
+//                 int uvwY = static_cast<int>(uvw[1]);
+//                 int uvwZ = static_cast<int>(uvw[2]);
+
+//                 if (uvwX < 0 || uvwX >= dimX ||
+//                     uvwY < 0 || uvwY >= dimY ||
+//                     uvwZ < 0 || uvwZ >= dimZ)
+//                     continue;
+
+//                 int newIndex;
+//                 indicesToVoxel(uvwX, uvwY, uvwZ, newIndex);
+
+//                 if (newIndex < 0 || newIndex >= m_voxels.size())
+//                     continue;
+
+//                 deformedVoxels[index] = m_voxels[newIndex];
+//             }
+//         }
+//     }
+
+//     m_voxels = std::move(deformedVoxels);
+// }
 

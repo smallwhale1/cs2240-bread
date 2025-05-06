@@ -29,11 +29,14 @@ private:
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
 
+    void saveDistanceVoxels(const std::string& filepath);
+    void loadDistanceVoxels(const std::string& filepath);
+
     // parameters
     // temperature deformation
-    float p = 4.0;
+    float p = 1.0;
     // rising
-    float S = 1.05;
+    float S = 1.1;
 
     // deformation
     void warpBubbles(std::vector<Eigen::Vector3f> grad);
@@ -42,6 +45,7 @@ private:
     std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
     void convolveGaussian();
     void generateGaussianFilter();
+    float trilinearSampleVoxel(float x, float y, float z);
     std::vector<float> m_mock_temp;
 
     int m_filterRadius = 1; // change radius of filter
