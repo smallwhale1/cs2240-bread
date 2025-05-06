@@ -34,9 +34,9 @@ private:
 
     // parameters
     // temperature deformation
-    float p = 1.0;
+    float p = 2.0;
     // rising
-    float S = 1.1;
+    float S = 1.05;
 
     // deformation
     void warpBubbles(std::vector<Eigen::Vector3f> grad);

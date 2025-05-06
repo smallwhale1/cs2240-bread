@@ -29,7 +29,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bread_64.binvox";
+    const std::string& filepath = "meshes-binvox/bread_128.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -118,7 +118,7 @@ void Bread::init() {
 
     // BREAD LOGIC
 
-    const std::string distFile = "distance-64.bin";
+    const std::string distFile = "distance-128-bfs.bin";
 
     try {
         loadDistanceVoxels(distFile);
@@ -130,7 +130,7 @@ void Bread::init() {
 
     // distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 7);
+    generateBubbles(1, 9);
 
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
@@ -147,7 +147,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("64-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     initTemperatures();
     initBake();
@@ -183,7 +183,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("64-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
     cout << "done!" << endl;
 }
@@ -213,51 +213,117 @@ void Bread::loadDistanceVoxels(const std::string& filepath) {
     in.close();
 }
 
-void Bread::distanceVoxels() {
-    m_distance_voxels.resize(m_voxels.size());
+// void Bread::distanceVoxels() {
+//     m_distance_voxels.resize(m_voxels.size());
 
-    #pragma omp parallel for
-    for (int i = 0; i < m_voxels.size(); i++) {
-        if (!m_voxels[i]) {
-            m_distance_voxels[i] = 0.f;
-        } else {
-            int x, y, z;
-            voxelToIndices(i, x, y, z);
-            if (x == 0 || y == 0 || z == 0 || x == dimX - 1 || y == dimY - 1 || z == dimZ - 1) {
-                m_distance_voxels[i] = 1.f;
-            } else {
-                float minDistance = dimX * dimY * dimZ;
-                for (int j = 0; j < m_voxels.size(); j++) {
-                    if (i != j && !m_voxels[j]) {
-                        int x_prime, y_prime, z_prime;
-                        voxelToIndices(j, x_prime, y_prime, z_prime);
-                        float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
-                        if (currDistance < minDistance) {
-                            minDistance = currDistance;
+//     #pragma omp parallel for
+//     for (int i = 0; i < m_voxels.size(); i++) {
+//         if (!m_voxels[i]) {
+//             m_distance_voxels[i] = 0.f;
+//         } else {
+//             int x, y, z;
+//             voxelToIndices(i, x, y, z);
+//             if (x == 0 || y == 0 || z == 0 || x == dimX - 1 || y == dimY - 1 || z == dimZ - 1) {
+//                 m_distance_voxels[i] = 1.f;
+//             } else {
+//                 float minDistance = dimX * dimY * dimZ;
+//                 for (int j = 0; j < m_voxels.size(); j++) {
+//                     if (i != j && !m_voxels[j]) {
+//                         int x_prime, y_prime, z_prime;
+//                         voxelToIndices(j, x_prime, y_prime, z_prime);
+//                         float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
+//                         if (currDistance < minDistance) {
+//                             minDistance = currDistance;
+//                         }
+//                     }
+//                 }
+//                 if (x + 1 < minDistance) {
+//                     minDistance = x + 1;
+//                 }
+//                 if (y + 1 < minDistance) {
+//                     minDistance = y + 1;
+//                 }
+//                 if (y + 1 < minDistance) {
+//                     minDistance = z + 1;
+//                 }
+//                 if (dimX - x < minDistance) {
+//                     minDistance = dimX - x;
+//                 }
+//                 if (dimY - y < minDistance) {
+//                     minDistance = dimY - y;
+//                 }
+//                 if (dimZ - z < minDistance) {
+//                     minDistance = dimZ - z;
+//                 }
+//                 m_distance_voxels[i] = minDistance;
+//             }
+
+//         }
+//     }
+// }
+
+void Bread::distanceVoxels() {
+    m_distance_voxels.resize(m_voxels.size(), std::numeric_limits<float>::max());
+
+    std::queue<std::tuple<int, int, int>> q;
+
+    for (int x = 0; x < dimX; ++x) {
+        for (int y = 0; y < dimY; ++y) {
+            for (int z = 0; z < dimZ; ++z) {
+                int idx;
+                indicesToVoxel(x, y, z, idx);
+                if (!m_voxels[idx]) {
+                    m_distance_voxels[idx] = 0.f;
+                    continue;
+                }
+
+                bool isSurface = false;
+                for (int dx = -1; dx <= 1 && !isSurface; ++dx) {
+                    for (int dy = -1; dy <= 1 && !isSurface; ++dy) {
+                        for (int dz = -1; dz <= 1 && !isSurface; ++dz) {
+                            if (dx == 0 && dy == 0 && dz == 0) continue;
+                            int nx = x + dx;
+                            int ny = y + dy;
+                            int nz = z + dz;
+                            if (nx < 0 || ny < 0 || nz < 0 || nx >= dimX || ny >= dimY || nz >= dimZ)
+                                continue;
+                            int nIdx;
+                            indicesToVoxel(nx, ny, nz, nIdx);
+                            if (!m_voxels[nIdx]) {
+                                isSurface = true;
+                                m_distance_voxels[idx] = 1.f;
+                                q.emplace(x, y, z);
+                            }
                         }
                     }
                 }
-                if (x + 1 < minDistance) {
-                    minDistance = x + 1;
-                }
-                if (y + 1 < minDistance) {
-                    minDistance = y + 1;
-                }
-                if (y + 1 < minDistance) {
-                    minDistance = z + 1;
-                }
-                if (dimX - x < minDistance) {
-                    minDistance = dimX - x;
-                }
-                if (dimY - y < minDistance) {
-                    minDistance = dimY - y;
-                }
-                if (dimZ - z < minDistance) {
-                    minDistance = dimZ - z;
-                }
-                m_distance_voxels[i] = minDistance;
             }
+        }
+    }
 
+    const int dx[6] = {1, -1, 0, 0, 0, 0};
+    const int dy[6] = {0, 0, 1, -1, 0, 0};
+    const int dz[6] = {0, 0, 0, 0, 1, -1};
+
+    while (!q.empty()) {
+        auto [x, y, z] = q.front();
+        q.pop();
+        int currIdx;
+        indicesToVoxel(x, y, z, currIdx);
+        float currDist = m_distance_voxels[currIdx];
+
+        for (int i = 0; i < 6; ++i) {
+            int nx = x + dx[i];
+            int ny = y + dy[i];
+            int nz = z + dz[i];
+            if (nx < 0 || ny < 0 || nz < 0 || nx >= dimX || ny >= dimY || nz >= dimZ)
+                continue;
+            int nIdx;
+            indicesToVoxel(nx, ny, nz, nIdx);
+            if (m_voxels[nIdx] && m_distance_voxels[nIdx] > currDist + 1) {
+                m_distance_voxels[nIdx] = currDist + 1;
+                q.emplace(nx, ny, nz);
+            }
         }
     }
 }
@@ -384,7 +450,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 84; // resolution of proving vol in each spatial coordinate
+    int r = 164; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
