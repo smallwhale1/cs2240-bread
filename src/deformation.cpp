@@ -325,7 +325,12 @@ void Bread::rise(std::vector<Vector3f> grad) {
 
                 // i think this is because we just applied deformation and this
                 // gets the deformed location
-                Vector3f rst = Vector3f(u, v, w) - m_P[originalInd] * grad[originalInd];
+                Vector3f rst;
+                if (m_P[originalInd] == 0) {
+                    rst = Vector3f(u, v, w) - p * grad[originalInd];
+                } else {
+                    rst = Vector3f(u, v, w) - m_P[originalInd] * grad[originalInd];
+                }
 
                 int rstX = static_cast<int>(rst[0]);
                 int rstY = static_cast<int>(rst[1]);
@@ -342,8 +347,13 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 if (rstIndex < 0 || rstIndex >= m_voxels.size())
                     continue;
 
-                float radius = m_P[rstIndex];
-                Vector3f xyz = rst * (S * radius);
+
+                Vector3f xyz;
+                if (m_P[rstIndex] != 0) {
+                    xyz = rst / (S * m_P[rstIndex]);
+                } else {
+                    xyz = Vector3f(u, v, w) - p * grad[originalInd];
+                }
 
                 int xyzX = static_cast<int>(xyz[0]);
                 int xyzY = static_cast<int>(xyz[1]);

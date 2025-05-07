@@ -64,8 +64,6 @@ void Bread::init() {
     int numVoxels = dimX * dimY * dimZ;
 
     m_voxels.resize(numVoxels);
-    m_P.resize(numVoxels);
-    std::fill(m_P.begin(), m_P.end(), 1);
     // std::vector<bool> voxels(numVoxels);
 
     // parse data
@@ -90,7 +88,7 @@ void Bread::init() {
     addPadding(10);
 
     m_P.resize(m_voxels.size());
-    std::fill(m_P.begin(), m_P.end(), 1);
+    std::fill(m_P.begin(), m_P.end(), 0);
 
     fillIn();
 

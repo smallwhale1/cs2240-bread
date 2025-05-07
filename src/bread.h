@@ -3,6 +3,7 @@
 #include "Eigen/Dense"
 
 #include <vector>
+#include <queue>
 
 class Bread {
 private:
@@ -36,7 +37,7 @@ private:
     // temperature deformation
     float p = 2.0;
     // rising
-    float S = 1.05;
+    float S = 2;
 
     // deformation
     void warpBubbles(std::vector<Eigen::Vector3f> grad);
