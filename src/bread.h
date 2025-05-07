@@ -39,10 +39,12 @@ private:
     void warpBubbles(std::vector<Eigen::Vector3f> grad);
     void rise(std::vector<Eigen::Vector3f> grad);
     void constructMockTemp();
+    void constructTemp();
     std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
     void convolveGaussian();
     void generateGaussianFilter();
     std::vector<float> m_mock_temp;
+    std::vector<float> m_temp;
 
     int m_filterRadius = 1; // change radius of filter
     std::vector<float> m_gaussianKernel;

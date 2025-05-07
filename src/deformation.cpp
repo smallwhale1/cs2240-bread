@@ -34,6 +34,22 @@ void Bread::constructMockTemp() {
     }
 }
 
+void Bread::constructTemp() {
+    m_temp.resize(m_distance_voxels.size());
+
+    float outerTemp = 114.f; // not sure exactly what to make this
+
+    for (int i = 0; i < m_distance_voxels.size(); i++) {
+        float temp = 0.f;
+        if (m_distance_voxels[i] == 0.f) {
+            temp = outerTemp;
+        } else {
+            temp = m_temperatures[m_distance_voxels[i]];
+        }
+        m_temp[i] = temp;
+    }
+}
+
 std::vector<Vector3f> Bread::calcGradient(std::vector<float> inputVec) {
     std::vector<Vector3f> gradVector;
     gradVector.resize(m_voxels.size());
