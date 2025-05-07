@@ -152,7 +152,7 @@ void Bread::init() {
     initBake();
 
     for (int i = 0; i < bakingIterations; i++) {
-        bake();
+        bake(i);
     }
 
     for (int i = 0; i < m_temperatures.size(); i++) {
@@ -412,7 +412,7 @@ void Bread::fillIn() {
     }
 }
 //iterates over every distance for each time step, stores results in temperatures vector
-void Bread::bake(){
+void Bread::bake(int time){
 
     //hr, hc
 
@@ -536,6 +536,9 @@ void Bread::bake(){
     for (int x = 0; x < m_temperatures.size(); x++) {
         m_temperatures[x] += timestep * dtdt[x];
     }
+
+    //create crust
+    createCrust(time, dWdt);
 }
 
 void Bread::initBake() {
@@ -546,6 +549,9 @@ void Bread::initBake() {
     m_p.reserve(m_temperatures.size());
     m_p.assign(m_temperatures.size(), 285.0);
 
+    // fill m_L
+    m_L.assign(m_distance_voxels.size(), 90.f)
+
 }
 
 void Bread::initTemperatures(){
@@ -555,50 +561,138 @@ void Bread::initTemperatures(){
     cout << largest << endl;
     m_temperatures.resize(int(largest));
     m_temperatures.assign(int(largest), 298.0); //23 degrees celsius for every location
+
+    std::vector<float> m_L(m_temperatures.size(), 90.f);
+    crust_time = 0.f;
 }
 
-void Bread::heatMap() {
-    std::vector<std::vector<double>> data;
-    int y = dimY/2;
-    int rows = dimZ;
-    int cols = dimX;
+//void Bread::heatMap() {
+//    std::vector<std::vector<double>> data;
+//    int y = dimY/2;
+//    int rows = dimZ;
+//    int cols = dimX;
 
-    for (int i = rows - 1; i > -1; i--) {
-        std::vector<double> row;
-        for (int j = 0; j < cols; j++) {
-            float dist = m_distance_voxels[j * dimX * dimZ + i * dimZ + y];
-            if (dist > 0.f) {
-                int idx = dist - 1;
-                row.push_back(m_temperatures[idx] - 273.15);
-                cout << idx << endl;
-            } else {
-                row.push_back(145.0);
+//    for (int i = rows - 1; i > -1; i--) {
+//        std::vector<double> row;
+//        for (int j = 0; j < cols; j++) {
+//            float dist = m_distance_voxels[j * dimX * dimZ + i * dimZ + y];
+//            if (dist > 0.f) {
+//                int idx = dist - 1;
+//                row.push_back(m_temperatures[idx] - 273.15);
+//                cout << idx << endl;
+//            } else {
+//                row.push_back(145.0);
+//            }
+
+//            // if (voxelAt(j, y, i)) {
+//            //     row.push_back(1.0);
+//            // } else {
+//            //     row.push_back(0.0);
+//            // }
+
+//        }
+//        data.push_back(row);
+//    }
+
+
+//    cv::Mat mat(rows, cols, CV_32F);
+
+//    // Normalize data and fill matrix
+//    for (int i = 0; i < rows; ++i)
+//        for (int j = 0; j < cols; ++j)
+//            mat.at<float>(i, j) = data[i][j];
+
+//    cv::Mat normalized;
+//    cv::normalize(mat, normalized, 0, 255, cv::NORM_MINMAX);
+//    normalized.convertTo(normalized, CV_8U);
+
+//    cv::Mat colorMap;
+//    cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
+//    cv::imshow("Heatmap", colorMap);
+//    cv::waitKey(0);
+//}
+
+void Bread::createCrust(int time, std::vector<double> dWdt){
+
+    //has to change based on time step, relationship between num voxels of mesh and time step for thickness, certain percentage of crust based on timestep
+    double crust_thickness = dimX * time * (0.03125 / bakingIterations); //not sure which dim this should be or if it should be an average / different for all dims
+    //ok so this is based on me estimating one of the images that shows the crust thickness is 3.125% of the number of voxels when fully baked
+
+    // a* [4.5e1.5] and b* [22.6e45.9]
+
+    std::vector<std::vector<float>> rgb_colors; //L, lightness of color, 0-100 of black-white, ours will be 90-40 as unbaked-burnt;
+        //channel 2 is positoin a between red and green (-120-+120);
+        //chnanel 3 is position b between yellow and blue (-120-+120)
+
+    std::cout << "adding crust" << std::endl;
+    for(int i = 0; i < m_distance_voxels.size(); i++){
+
+        std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
+
+        //voxel that is within crust distance, has a temp > 120C/393.15K, and has water activity < 0.6 //increasing temperature decreases water activity
+        if(m_distance_voxels[i] < crust_thickness && m_distance_voxels[i] != 0 && m_temperatures[std::floor((m_distance_voxels[i]))] > 390.f && dWdt[i] < 0.6f){
+
+            //how long have we been updating the crust color, hopefuly goes for about 20 iterations
+            if(i == 0){
+                crust_time++;
             }
 
-            // if (voxelAt(j, y, i)) {
-            //     row.push_back(1.0);
-            // } else {
-            //     row.push_back(0.0);
-            // }
+            float temp1 = std::pow(7.923310f, 6.f) + (std::pow(2.739710f, 6.f) / dWdt[i]);//water_acticity ranges from 0.1 to 0.6
+            float temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / dWdt[i])) / m_temperatures[i]); //temp at this voxel at this time
+            float k = std::pow(temp1, temp2);
+            m_L[i] += -k * m_L[i] * timestep; //decrements
 
+            float a = -4.5f + (.125 * crust_time * timestep);
+            float b = 22.6 + (1.f * crust_time * timestep);
+
+            std::vector<float> temp = labToRgb({m_L[i], a, b});
+            rgb_colors.push_back({(float)i, temp[0], temp[1], temp[2]});
         }
-        data.push_back(row);
+
+    }
+
+    std::cout << "color size: " << rgb_colors.size() << std::endl;
+    for(int i = 0; i < rgb_colors.size(); i++){
+        std::cout << "L: " << rgb_colors[i][0] << ", a: " << rgb_colors[i][1] << ", b: " << rgb_colors[i][2] << std::endl;
     }
 
 
-    cv::Mat mat(rows, cols, CV_32F);
+}
 
-    // Normalize data and fill matrix
-    for (int i = 0; i < rows; ++i)
-        for (int j = 0; j < cols; ++j)
-            mat.at<float>(i, j) = data[i][j];
+std::vector<float> Bread::labToRgb(std::vector<float> color){
 
-    cv::Mat normalized;
-    cv::normalize(mat, normalized, 0, 255, cv::NORM_MINMAX);
-    normalized.convertTo(normalized, CV_8U);
+    float L = color[0];
+    float A = color[1];
+    float B = color[2];
 
-    cv::Mat colorMap;
-    cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
-    cv::imshow("Heatmap", colorMap);
-    cv::waitKey(0);
+    float fy = (L + 16.0f) / 116.0f;
+    float fx = A / 500.0f + fy;
+    float fz = fy - B / 200.0f;
+    float delta = 6.0f / 29.0f;
+
+    float x = (fx > delta) ? std::pow(fx, 3.0f) : 3 * delta * delta * (fx - 4.0f / 29.0f);
+    x *= 95.047f;
+    float y = (fy > delta) ? std::pow(fy, 3.0f) : 3 * delta * delta * (fy - 4.0f / 29.0f);;
+    y *= 100.f;
+    float z = (fz > delta) ? std::pow(fz, 3.0f) : 3 * delta * delta * (fz - 4.0f / 29.0f);;
+    z *= 108.883f;
+
+    x /= 100.0f;
+    y /= 100.0f;
+    z /= 100.0f;
+
+    float r = x *  3.2406f + y * -1.5372f + z * -0.4986f;
+    float g = x * -0.9689f + y *  1.8758f + z *  0.0415f;
+    float b = x *  0.0557f + y * -0.2040f + z *  1.0570f;
+
+    r = (r > 0.0031308f) ? (1.055f * std::pow(r, 1 / 2.4f) - 0.055f) : (12.92f * r);
+    r = (g > 0.0031308f) ? (1.055f * std::pow(g, 1 / 2.4f) - 0.055f) : (12.92f * g);
+    r = (b > 0.0031308f) ? (1.055f * std::pow(b, 1 / 2.4f) - 0.055f) : (12.92f * b);
+
+    r = std::clamp(r, 0.f, 1.f);
+    g = std::clamp(g, 0.f, 1.f);
+    b = std::clamp(b, 0.f, 1.f);
+
+    return {r, g, b};
+
 }
