@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "marching.h"
-#include <omp.h>
+// #include <omp.h>
 #include <algorithm>
 
 #include <QString>
@@ -173,7 +173,7 @@ void Bread::init() {
     // convolveGaussian();
 
     warpBubbles(m_gradVector);
-    // rise(m_gradVector);
+    rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
