@@ -28,15 +28,20 @@ private:
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
 
-    std::vector<double> m_temperatures;
-    std::vector<double> m_W;
-    std::vector<double> m_p;
+    std::vector<float> m_temperatures;
+    std::vector<float> m_W;
+    std::vector<float> m_p;
     double timestep = 30.0; // maybe should be like 30??
-    int bakingIterations = 100;
+    int bakingIterations = 3;
     void initTemperatures();
-    void bake();
+    void bake(int time);
     void initBake();
     float prevDensity;
+
+    std::vector<float> m_L;
+    float crust_time;
+    void createCrust(int time, std::vector<double> dWdt);
+    std::vector<float> labToRgb(std::vector<float> color);
 
 };
 

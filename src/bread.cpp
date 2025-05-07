@@ -83,15 +83,17 @@ void Bread::init() {
 
     distanceVoxels();
 
+
+
     int x, y, z;
     voxelToIndices(200, x, y, z);
-    std::cout << "x: " << x << std::endl;
-    std::cout << "y: " << y << std::endl;
-    std::cout << "z: " << z << std::endl;
+//    std::cout << "x: " << x << std::endl;
+//    std::cout << "y: " << y << std::endl;
+//    std::cout << "z: " << z << std::endl;
 
     int i;
     indicesToVoxel(x, y, z, i);
-    std::cout << "i: " << i << std::endl;
+//    std::cout << "i: " << i << std::endl;
 
     generateSphere(0, 0, 0, 2);
     generateBubbles(1, 10);
@@ -117,14 +119,18 @@ void Bread::init() {
     initBake();
 
     for (int i = 0; i < bakingIterations; i++) {
-        bake();
+        bake(i);
+
+
+
+
 
         // temps are nan when in release mode but not in debug
     }
 
-    for (int i = 0; i < m_temperatures.size(); i++) {
-        cout << m_temperatures[i] - 273.15 << endl;
-    }
+//    for (int i = 0; i < m_temperatures.size(); i++) {
+//        cout << m_temperatures[i] - 273.15 << endl;
+//    }
 
     cout << "done!" << endl;
 }
@@ -246,7 +252,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     while (radius <= maxRadius) {
         // subtract spheres of minRadius
         int numSpheres = k / pow(radius, d);
-        std::cout << "numSpheres: " << numSpheres << std::endl;
+//        std::cout << "numSpheres: " << numSpheres << std::endl;
         for (int i = 0; i < numSpheres; i++) {
             // generate random coord inside dims
             int x = arc4random_uniform(dimX);
@@ -288,7 +294,7 @@ void Bread::fillIn() {
     }
 }
 //iterates over every distance for each time step, stores results in temperatures vector
-void Bread::bake(){
+void Bread::bake(int time){
 
     //hr, hc
 
@@ -300,7 +306,7 @@ void Bread::bake(){
     double temp_radial = 2.0 * temp_air; //temp at heat source
     double emissivity_product = 0.9;
     double emissivity_radial = 0.5; //tbh not sure but it's based on the this website and the common wire heating element in an oven of a nickel-copper mix
-                                    //https://www.flukeprocessinstruments.com/en-us/service-and-support/knowledge-center/infrared-technology/emissivity-metals
+        //https://www.flukeprocessinstruments.com/en-us/service-and-support/knowledge-center/infrared-technology/emissivity-metals
 
     double asp = 0.1; //length of the sample
     double bsp = 0.2; //width of the sample
@@ -312,15 +318,22 @@ void Bread::bake(){
 
     //shape factor, compares shape of bread to shape of radial source
     double fsp = (2.0 / (M_PI * a * b)) * (
-                    std::log( sqrt((a1 * b1) / (1.0 + pow(a, 2) + pow(b, 2)))) +
-                    (a * sqrt(b1) * std::atan(a / sqrt(b1))) +
-                    (b * sqrt(a1) * std::atan(b / sqrt(a1))) -
-                    (a * std::atan(a)) - (b * std::atan(b))
-                    );
+                     std::log( sqrt((a1 * b1) / (1.0 + pow(a, 2) + pow(b, 2)))) +
+                     (a * sqrt(b1) * std::atan(a / sqrt(b1))) +
+                     (b * sqrt(a1) * std::atan(b / sqrt(a1))) -
+                     (a * std::atan(a)) - (b * std::atan(b))
+                     );
 
     //heat transfer coefficient for radiation
     double hr = (sigma * (pow(temp_radial, 2) + pow(temp_surface, 2)) * (temp_radial + temp_surface)) /
-               ((1.0 / emissivity_product) + (1.0 / emissivity_radial) - 2.0 + (1.0 / fsp));
+                ((1.0 / emissivity_product) + (1.0 / emissivity_radial) - 2.0 + (1.0 / fsp));
+
+
+
+
+
+
+
 
     double k = 0.5; // thermal conductivity
     double lambda = 2.257; //latent heat of evaporation/vaporization of water (like how much heat is needs for a phase change i think)
@@ -341,6 +354,7 @@ void Bread::bake(){
 
     // fill in dWdx
     double h_w = 0.00140 * m_temperatures[0] + 0.27 * m_W[0] - 0.0004 * m_temperatures[0] * m_W[0] - 0.77 * m_W[0] * m_W[0];
+
     dWdx[0] = h_w * (m_W[0] - w_air);
     dWdx[m_W.size() - 1] = 0.f;
 
@@ -363,24 +377,35 @@ void Bread::bake(){
         } else {
             dWdx2[x] = (dWdx[x+1] - dWdx[x-1]) / (distance * 2.0);
         }
+
     }
+
 
     // fill in dWdt
     for (int x = 0; x < m_W.size(); x++) {
+
+
+
         dWdt[x] = diffusivity * dWdx2[x];
     }
 
     // timestep forward
     for (int x = 0; x < m_W.size(); x++) {
+
+
+
         // explicit euler for now
         m_W[x] += timestep * dWdt[x];
     }
 
     m_W[0] = m_W[1] - distance * dWdx[0];
+
+
     m_W[m_W.size() - 1] = m_W[m_W.size() - 2];
 
     //fill up dtdx
     for(int x = 0; x < m_temperatures.size(); x++){
+
         if(x == m_temperatures.size() - 1){ //inside edge of the bread
             dtdx[x] = 0.0;
         } else if(x == 0){ //outside edge of the bread
@@ -391,10 +416,13 @@ void Bread::bake(){
     }
 
     for(int x = 0; x < dtdx2.size(); x++){
+
         if(x == 0){ //outside edge of the bread
             dtdx2[x] = (dtdx[1] - dtdx[0]) / distance;
+
         } else if(x == m_temperatures.size() - 1){ //inside edge of the bread
             dtdx2[x] = (dtdx[x] - dtdx[x - 1]) / distance;
+
         } else { //every other internal point in the bread
             dtdx2[x] = (dtdx[x + 1] - dtdx[x - 1]) / (distance * 2.0);
         }
@@ -411,20 +439,27 @@ void Bread::bake(){
         dtdt[x] = (k * dtdx2[x]) / (new_p * specific_heat) + (lambda * dWdt[x]) / specific_heat + (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
     }
 
+
     // update m_temperatures
     for (int x = 0; x < m_temperatures.size(); x++) {
         m_temperatures[x] += timestep * dtdt[x];
     }
+
+    //create crust
+    createCrust(time, dWdt);
 }
 
 void Bread::initBake() {
     // fill m_W
     // m_W.resize(m_temperatures.size());
-    m_W.assign(m_temperatures.size(), 0.4);
+    m_W.assign(m_temperatures.size(), 0.4f);
 
     // fill m_p
     m_p.reserve(m_temperatures.size());
-    m_p.assign(m_temperatures.size(), 285.0);
+    m_p.assign(m_temperatures.size(), 285.f);
+
+    // fill m_L
+    m_L.assign(m_distance_voxels.size(), 90.f);
 
 }
 
@@ -432,9 +467,97 @@ void Bread::initTemperatures(){
 
     float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
     // float largest = 12;
-    cout << largest << endl;
+//    cout << largest << endl;
     m_temperatures.resize(int(largest));
-    m_temperatures.assign(int(largest), 298.0); //23 degrees celsius for every location
+    m_temperatures.assign(int(largest), 25.0f); //23 degrees celsius for every location
+
+    std::vector<float> m_L(m_temperatures.size(), 90.f);
+    crust_time = 0.f;
+}
+
+void Bread::createCrust(int time, std::vector<double> dWdt){
+
+    //has to change based on time step, relationship between num voxels of mesh and time step for thickness, certain percentage of crust based on timestep
+    double crust_thickness = dimX * time * (0.03125 / bakingIterations); //not sure which dim this should be or if it should be an average / different for all dims
+    //ok so this is based on me estimating one of the images that shows the crust thickness is 3.125% of the number of voxels when fully baked
+
+    // a* [4.5e1.5] and b* [22.6e45.9]
+
+    std::vector<std::vector<float>> rgb_colors; //L, lightness of color, 0-100 of black-white, ours will be 90-40 as unbaked-burnt;
+        //channel 2 is positoin a between red and green (-120-+120);
+        //chnanel 3 is position b between yellow and blue (-120-+120)
+
+    std::cout << "adding crust" << std::endl;
+    for(int i = 0; i < m_distance_voxels.size(); i++){
+
+        std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
+
+        //voxel that is within crust distance, has a temp > 120C/393.15K, and has water activity < 0.6 //increasing temperature decreases water activity
+        if(m_distance_voxels[i] < crust_thickness && m_distance_voxels[i] != 0 && m_temperatures[std::floor((m_distance_voxels[i]))] > 390.f && dWdt[i] < 0.6f){
+
+            //how long have we been updating the crust color, hopefuly goes for about 20 iterations
+            if(i == 0){
+                crust_time++;
+            }
+
+            float temp1 = std::pow(7.923310f, 6.f) + (std::pow(2.739710f, 6.f) / dWdt[i]);//water_acticity ranges from 0.1 to 0.6
+            float temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / dWdt[i])) / m_temperatures[i]); //temp at this voxel at this time
+            float k = std::pow(temp1, temp2);
+            m_L[i] += -k * m_L[i] * timestep; //decrements
+
+            float a = -4.5f + (.125 * crust_time * timestep);
+            float b = 22.6 + (1.f * crust_time * timestep);
+
+            std::vector<float> temp = labToRgb({m_L[i], a, b});
+            rgb_colors.push_back({(float)i, temp[0], temp[1], temp[2]});
+        }
+
+    }
+
+    std::cout << "color size: " << rgb_colors.size() << std::endl;
+    for(int i = 0; i < rgb_colors.size(); i++){
+        std::cout << "L: " << rgb_colors[i][0] << ", a: " << rgb_colors[i][1] << ", b: " << rgb_colors[i][2] << std::endl;
+    }
+
+
+}
+
+std::vector<float> Bread::labToRgb(std::vector<float> color){
+
+    float L = color[0];
+    float A = color[1];
+    float B = color[2];
+
+    float fy = (L + 16.0f) / 116.0f;
+    float fx = A / 500.0f + fy;
+    float fz = fy - B / 200.0f;
+    float delta = 6.0f / 29.0f;
+
+    float x = (fx > delta) ? std::pow(fx, 3.0f) : 3 * delta * delta * (fx - 4.0f / 29.0f);
+    x *= 95.047f;
+    float y = (fy > delta) ? std::pow(fy, 3.0f) : 3 * delta * delta * (fy - 4.0f / 29.0f);;
+    y *= 100.f;
+    float z = (fz > delta) ? std::pow(fz, 3.0f) : 3 * delta * delta * (fz - 4.0f / 29.0f);;
+    z *= 108.883f;
+
+    x /= 100.0f;
+    y /= 100.0f;
+    z /= 100.0f;
+
+    float r = x *  3.2406f + y * -1.5372f + z * -0.4986f;
+    float g = x * -0.9689f + y *  1.8758f + z *  0.0415f;
+    float b = x *  0.0557f + y * -0.2040f + z *  1.0570f;
+
+    r = (r > 0.0031308f) ? (1.055f * std::pow(r, 1 / 2.4f) - 0.055f) : (12.92f * r);
+    r = (g > 0.0031308f) ? (1.055f * std::pow(g, 1 / 2.4f) - 0.055f) : (12.92f * g);
+    r = (b > 0.0031308f) ? (1.055f * std::pow(b, 1 / 2.4f) - 0.055f) : (12.92f * b);
+
+    r = std::clamp(r, 0.f, 1.f);
+    g = std::clamp(g, 0.f, 1.f);
+    b = std::clamp(b, 0.f, 1.f);
+
+    return {r, g, b};
+
 }
 
 void calcHeatTranferCoeff(){
