@@ -3,6 +3,7 @@
 #include <algorithm>
 
 using namespace Eigen;
+using namespace std;
 
 void Bread::constructMockTemp() {
     m_mock_temp.resize(m_distance_voxels.size());
@@ -320,17 +321,22 @@ void Bread::rise(std::vector<Vector3f> grad) {
     for (int u = 0; u < dimX; u++) {
         for (int v = 0; v < dimY; v++) {
             for (int w = 0; w < dimZ; w++) {
+                // cout << "OLD" << endl;
+                // cout << u << endl;
+                // cout << v << endl;
+                // cout << w << endl;
+
                 int originalInd;
                 indicesToVoxel(u, v, w, originalInd);
 
                 // i think this is because we just applied deformation and this
                 // gets the deformed location
                 Vector3f rst;
-                if (m_P[originalInd] == 0) {
-                    rst = Vector3f(u, v, w) - p * grad[originalInd];
-                } else {
+                // if (m_P[originalInd] == 0) {
+                //     rst = Vector3f(u, v, w) - p * grad[originalInd];
+                // } else {
                     rst = Vector3f(u, v, w) - m_P[originalInd] * grad[originalInd];
-                }
+                // }
 
                 int rstX = static_cast<int>(rst[0]);
                 int rstY = static_cast<int>(rst[1]);
@@ -347,13 +353,55 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 if (rstIndex < 0 || rstIndex >= m_voxels.size())
                     continue;
 
+                float scaleFactor = S * m_P[rstIndex];
+                // if (m_P[rstIndex] != 1) {
+                //     cout << m_P[rstIndex] << endl;
+                // }
 
-                Vector3f xyz;
-                if (m_P[rstIndex] != 0) {
-                    xyz = rst / (S * m_P[rstIndex]);
-                } else {
-                    xyz = Vector3f(u, v, w) - p * grad[originalInd];
-                }
+                float worldX;
+                float worldY;
+                float worldZ;
+
+                voxelToSpatialCoords(rstX, rstY, rstZ, worldX, worldY, worldZ);
+                // cout << "OLD" << endl;
+                // cout << worldX << endl;
+                // cout << worldY << endl;
+                // cout << worldZ << endl;
+
+                worldX /= scaleFactor;
+                worldY /= scaleFactor;
+                worldZ /= scaleFactor;
+
+                // cout << "NEW" << endl;
+                // cout << worldX << endl;
+                // cout << worldY << endl;
+                // cout << worldZ << endl;
+
+                int newX;
+                int newY;
+                int newZ;
+
+                spatialToVoxel(worldX, worldY, worldZ, newX, newY, newZ);
+
+                // cout << "NEW" << endl;
+                // cout << newX << endl;
+                // cout << newY << endl;
+                // cout << newZ << endl;
+
+                Vector3f xyz = Vector3f(newX, newY, newZ);
+
+                // Vector3f xyz;
+                // if (m_P[rstIndex] != 0) {
+                //     // std::cout << (S * m_P[rstIndex]) << std::endl;
+                //     xyz = rst / (S * m_P[rstIndex]);
+                //     // std::cout << "RST" << rst << std::endl;
+                //     // std::cout << "XYZ" << xyz << std::endl;
+                // } else {
+                //     xyz = Vector3f(u, v, w) - p * grad[originalInd];
+                //     // std::cout << "RST" << rst << std::endl;
+                //     // std::cout << "XYZ" << xyz << std::endl;
+                // }
+
 
                 int xyzX = static_cast<int>(xyz[0]);
                 int xyzY = static_cast<int>(xyz[1]);
@@ -392,7 +440,7 @@ void Bread::rise(std::vector<Vector3f> grad) {
 //                 if (index < 0 || index >= m_voxels.size())
 //                     continue;
 
-//                 Vector3f rst = Vector3f(x, y, z) * (1.0f / S) * m_P[index];
+//                 Vector3f rst = Vector3f(x, y, z) / (S * m_P[index]);
 
 //                 int rstX = static_cast<int>(rst[0]);
 //                 int rstY = static_cast<int>(rst[1]);
@@ -433,4 +481,3 @@ void Bread::rise(std::vector<Vector3f> grad) {
 
 //     m_voxels = std::move(deformedVoxels);
 // }
-

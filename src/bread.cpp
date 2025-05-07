@@ -83,12 +83,12 @@ void Bread::init() {
 
     file.close();
 
-    // PADDING
-    // add padding around the edges to allow for rising
-    addPadding(10);
+    // // PADDING
+    // // add padding around the edges to allow for rising
+    // addPadding(10);
 
     m_P.resize(m_voxels.size());
-    std::fill(m_P.begin(), m_P.end(), 0);
+    std::fill(m_P.begin(), m_P.end(), 1.0);
 
     fillIn();
 
@@ -116,17 +116,17 @@ void Bread::init() {
 
     // BREAD LOGIC
 
-    const std::string distFile = "distance-128-bfs.bin";
+    // const std::string distFile = "distance-128.bin";
 
-    try {
-        loadDistanceVoxels(distFile);
-    } catch (...) {
-        std::cout << "calc distance" << std::endl;
-        distanceVoxels();
-        saveDistanceVoxels(distFile);
-    }
+    // try {
+    //     loadDistanceVoxels(distFile);
+    // } catch (...) {
+    //     std::cout << "calc distance" << std::endl;
+    //     distanceVoxels();
+    //     saveDistanceVoxels(distFile);
+    // }
 
-    // distanceVoxels();
+    distanceVoxels();
     generateSphere(0, 0, 0, 2);
     generateBubbles(1, 9);
 
@@ -170,7 +170,7 @@ void Bread::init() {
     generateGaussianFilter();
     // convolveGaussian();
 
-    warpBubbles(m_gradVector);
+    // warpBubbles(m_gradVector);
     rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
@@ -389,6 +389,17 @@ void Bread::voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worl
     worldY = scale * worldY + translateY;
     worldZ = scale * worldZ + translateZ;
 }
+
+void Bread::spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z) {
+    float x_n = (worldX - translateX) / scale;
+    float y_n = (worldY - translateY) / scale;
+    float z_n = (worldZ - translateZ) / scale;
+
+    x = static_cast<int>(x_n * dimX - 0.5f);
+    y = static_cast<int>(y_n * dimY - 0.5f);
+    z = static_cast<int>(z_n * dimZ - 0.5f);
+}
+
 
 bool Bread::voxelAt(int x, int y, int z) {
     return m_voxels[x * dimX * dimZ + z * dimZ + y];
