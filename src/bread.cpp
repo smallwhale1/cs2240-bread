@@ -130,6 +130,9 @@ void Bread::init() {
     generateSphere(0, 0, 0, 2);
     generateBubbles(1, 11);
 
+    const std::string pFile = "P-128.bin";
+    saveP(pFile);
+
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
     for (int i = 0; i < m_voxels.size(); i++) {
@@ -150,6 +153,24 @@ void Bread::init() {
     for (int i = 0; i < bakingIterations; i++) {
         bake();
         fillTemps();
+
+        // write out
+
+        m_gradVector = calcGradient(m_3d_temperatures);
+        std::vector<bool> warped = warpBubbles(m_gradVector);
+        std::vector<bool> risen = rise(m_gradVector, warped, (i + 1) * (S_change / bakingIterations));
+
+        for (int j = 0; j < m_voxels.size(); j++) {
+            int x, y, z;
+            voxelToIndices(j, x, y, z);
+            if (y < dimY / 2) {
+                risen[j] = 0;
+            }
+        }
+
+        std::string filename = "128-rise-" + std::to_string(i) + ".binvox";
+        writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+
         // for (int j = 0; j < m_3d_temperatures.size(); j++) {
         //     cout << m_3d_temperatures[j] << endl;
         // }
@@ -165,26 +186,50 @@ void Bread::init() {
     cout << "done!" << endl;
 
     constructMockTemp();
-
     m_gradVector = calcGradient(m_mock_temp);
 
     generateGaussianFilter();
     // convolveGaussian();
 
-    std::vector<bool> warped = warpBubbles(m_gradVector);
-    std::vector<bool> risen = rise(m_gradVector, warped);
+    // std::vector<bool> warped = warpBubbles(m_gradVector);
+    // std::vector<bool> risen = rise(m_gradVector, warped);
 
-    for (int i = 0; i < m_voxels.size(); i++) {
-        int x, y, z;
-        voxelToIndices(i, x, y, z);
-        if (y < dimY / 2) {
-            risen[i] = 0;
-        }
-    }
+    // for (int i = 0; i < m_voxels.size(); i++) {
+    //     int x, y, z;
+    //     voxelToIndices(i, x, y, z);
+    //     if (y < dimY / 2) {
+    //         risen[i] = 0;
+    //     }
+    // }
 
-    writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+    // writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
 
     cout << "done!" << endl;
+}
+
+void Bread::saveP(const std::string& filepath) {
+    std::ofstream out(filepath, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("Failed to open file for writing: " + filepath);
+    }
+
+    size_t size = m_P.size();
+    out.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    out.write(reinterpret_cast<const char*>(m_P.data()), size * sizeof(int));
+    out.close();
+}
+
+void Bread::loadP(const std::string& filepath) {
+    std::ifstream in(filepath, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Failed to open file for reading: " + filepath);
+    }
+
+    size_t size;
+    in.read(reinterpret_cast<char*>(&size), sizeof(size));
+    m_P.resize(size);
+    in.read(reinterpret_cast<char*>(m_P.data()), size * sizeof(int));
+    in.close();
 }
 
 void Bread::saveDistanceVoxels(const std::string& filepath) {
@@ -660,13 +705,13 @@ void Bread::initTemperatures(){
 void Bread::fillTemps() {
     cout << "temp 0 " << m_temperatures[0] << endl;
     for (int i = 0; i < m_voxels.size(); i++) {
-        if (m_distance_voxels[i] <= 0) {
+        if (m_distance_voxels[i] <= m_crust_thickness) {
             // cout << "dist " << m_distance_voxels[i] << endl;
             // cout << "hello " << endl;
-            m_3d_temperatures[i] = m_temperatures[0];
+            m_3d_temperatures[i] = static_cast<float>(m_temperatures[0]);
         } else {
             int dist = static_cast<int>(m_distance_voxels[i]);
-            m_3d_temperatures[i] = m_temperatures[dist];
+            m_3d_temperatures[i] = static_cast<float>(m_temperatures[dist]);
         }
     }
 }

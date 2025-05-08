@@ -315,10 +315,10 @@ std::vector<bool> Bread::warpBubbles(std::vector<Vector3f> grad) {
                 if (newLoc[0] < 0 || newLoc[0] >= dimX || newLoc[1] < 0 || newLoc[1] >= dimY || newLoc[2] < 0 || newLoc[2] >= dimZ) {
                     deformedVoxels[index] = 0;
                 } else {
-                    // deformedVoxels[index] = m_voxels[newIndex];
+                    deformedVoxels[index] = m_voxels[newIndex];
 
-                    float sample = trilinearSampleVoxel(newLoc[0], newLoc[1], newLoc[2]);
-                    deformedVoxels[index] = sample > 0.5f;
+                    // float sample = trilinearSampleVoxel(newLoc[0], newLoc[1], newLoc[2]);
+                    // deformedVoxels[index] = sample > 0.5f;
                 }
             }
         }
@@ -331,8 +331,9 @@ std::vector<bool> Bread::warpBubbles(std::vector<Vector3f> grad) {
     // }
 }
 
-std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inputVec) {
+std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inputVec, float scaleAmt) {
     std::vector<bool> deformedVoxels(m_voxels.size(), false);
+    cout << "scale: " << 1.0 + scaleAmt << endl;
 
     for (int u = 0; u < dimX; u++) {
         for (int v = 0; v < dimY; v++) {
@@ -365,7 +366,7 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
                 if (rstIndex < 0 || rstIndex >= m_voxels.size())
                     continue;
 
-                float scaleFactor = S * m_P[rstIndex];
+                float scaleFactor = (1.0 + scaleAmt) * m_P[rstIndex];
                 // if (m_P[rstIndex] != 1) {
                 //     cout << m_P[rstIndex] << endl;
                 // }
