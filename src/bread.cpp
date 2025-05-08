@@ -138,7 +138,7 @@ void Bread::init() {
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
         voxelToIndices(i, x, y, z);
-        if (y < dimY / 2) {
+        if (z < dimZ / 2) {
             voxelCopy[i] = 0;
         }
     }
@@ -163,7 +163,7 @@ void Bread::init() {
         for (int j = 0; j < m_voxels.size(); j++) {
             int x, y, z;
             voxelToIndices(j, x, y, z);
-            if (y < dimY / 2) {
+            if (z < dimZ / 2) {
                 risen[j] = 0;
             }
         }
