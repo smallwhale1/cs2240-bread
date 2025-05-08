@@ -38,7 +38,7 @@ private:
 
     // parameters
     // temperature deformation
-    float p = 3.0;
+    float p = 4.0;
     // rising
     float S = 1.1;
     float S_change = S - 1.f;
@@ -373,7 +373,7 @@ private:
     std::vector<double> m_W;
     std::vector<double> m_p;
     double timestep = 30.0; // maybe should be like 30??
-    int bakingIterations = 10;
+    int bakingIterations = 48;
     void initTemperatures();
     void bake();
     void initBake();

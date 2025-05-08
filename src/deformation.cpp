@@ -374,8 +374,8 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
                 voxelToSpatialCoords(u, v, w, worldX, worldY, worldZ);
 
                 worldX /= scaleFactor;
-                worldY /= scaleFactor;
-                // worldY /= (scaleFactor * 1.2);
+                // worldY /= scaleFactor;
+                worldY /= (scaleFactor * 1.05);
                 worldZ /= scaleFactor;
 
                 int newX;
