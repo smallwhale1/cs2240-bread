@@ -197,7 +197,7 @@ void Bread::init() {
     // for (int i = 0; i < m_voxels.size(); i++) {
     //     int x, y, z;
     //     voxelToIndices(i, x, y, z);
-    //     if (y < dimY / 2) {
+    //     if (z < dimZ / 2) {
     //         risen[i] = 0;
     //     }
     // }

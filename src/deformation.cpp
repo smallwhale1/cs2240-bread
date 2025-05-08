@@ -330,7 +330,6 @@ std::vector<bool> Bread::warpBubbles(std::vector<Vector3f> grad) {
     //     m_voxels[i] = deformedVoxels[i];
     // }
 }
-
 std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inputVec, float scaleAmt) {
     std::vector<bool> deformedVoxels(m_voxels.size(), false);
     cout << "scale: " << 1.0 + scaleAmt << endl;
