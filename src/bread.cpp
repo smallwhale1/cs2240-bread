@@ -83,9 +83,9 @@ void Bread::init() {
 
     file.close();
 
-    // // // PADDING
-    // // // add padding around the edges to allow for rising
-    // addPadding(10);
+    // PADDING
+    // add padding around the edges to allow for rising
+    addPadding(10);
 
     m_P.resize(m_voxels.size());
     std::fill(m_P.begin(), m_P.end(), 1.0);
@@ -172,17 +172,17 @@ void Bread::init() {
     // convolveGaussian();
 
     std::vector<bool> warped = warpBubbles(m_gradVector);
-    std::vector<bool> risen = rise(m_gradVector);
+    std::vector<bool> risen = rise(m_gradVector, warped);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
         voxelToIndices(i, x, y, z);
         if (y < dimY / 2) {
-            m_voxels[i] = 0;
+            risen[i] = 0;
         }
     }
 
-    writeBinvox("128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
 
     cout << "done!" << endl;
 }

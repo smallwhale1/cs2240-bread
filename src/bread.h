@@ -35,9 +35,9 @@ private:
 
     // parameters
     // temperature deformation
-    float p = 2.0;
+    float p = 5.0;
     // rising
-    float S = 1.1;
+    float S = 1.05;
     float S_change = S - 1.f;
 
     int m_crust_thickness = 3;
