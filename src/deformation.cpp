@@ -348,7 +348,7 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
                 // if (m_P[originalInd] == 0) {
                 //     rst = Vector3f(u, v, w) - p * grad[originalInd];
                 // } else {
-                    rst = Vector3f(u, v, w) - m_P[originalInd] * grad[originalInd];
+                    rst = Vector3f(u, v, w) - p * grad[originalInd];
                 // }
 
                 int rstX = static_cast<int>(rst[0]);
@@ -379,7 +379,8 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
 
                 // deform Y more?
                 worldX /= scaleFactor;
-                worldY /= (scaleFactor * 1.2);
+                worldY /= scaleFactor;
+                // worldY /= (scaleFactor * 1.2);
                 worldZ /= scaleFactor;
 
                 int newX;
