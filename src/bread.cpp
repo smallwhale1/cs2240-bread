@@ -88,7 +88,7 @@ void Bread::init() {
     addPadding(10);
 
     m_P.resize(m_voxels.size());
-    std::fill(m_P.begin(), m_P.end(), 0);
+    std::fill(m_P.begin(), m_P.end(), 1.0);
 
     fillIn();
 
@@ -116,31 +116,29 @@ void Bread::init() {
 
     // BREAD LOGIC
 
-    const std::string distFile = "distance-128-bfs.bin";
+    // const std::string distFile = "distance-128.bin";
 
-    try {
-        loadDistanceVoxels(distFile);
-    } catch (...) {
-        std::cout << "calc distance" << std::endl;
-        distanceVoxels();
-        saveDistanceVoxels(distFile);
-    }
+    // try {
+    //     loadDistanceVoxels(distFile);
+    // } catch (...) {
+    //     std::cout << "calc distance" << std::endl;
+    //     distanceVoxels();
+    //     saveDistanceVoxels(distFile);
+    // }
 
-    // distanceVoxels();
+    distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 9);
+    generateBubbles(1, 11);
+
+    const std::string pFile = "P-128.bin";
+    saveP(pFile);
 
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
         voxelToIndices(i, x, y, z);
-        // cout << "x: " << x << endl;
-        // cout << "y: " << y << endl;
-        // cout << "z: " << z << endl;
         if (z < dimZ / 2) {
-            // cout << "hi" << endl;
-            // set to 0
             voxelCopy[i] = 0;
         }
     }
@@ -150,8 +148,32 @@ void Bread::init() {
     initTemperatures();
     initBake();
 
+    m_3d_temperatures.resize(m_voxels.size());
+
     for (int i = 0; i < bakingIterations; i++) {
         bake();
+        fillTemps();
+
+        // write out
+
+        m_gradVector = calcGradient(m_3d_temperatures);
+        std::vector<bool> warped = warpBubbles(m_gradVector);
+        std::vector<bool> risen = rise(m_gradVector, warped, (i + 1) * (S_change / bakingIterations));
+
+        for (int j = 0; j < m_voxels.size(); j++) {
+            int x, y, z;
+            voxelToIndices(j, x, y, z);
+            if (z < dimZ / 2) {
+                risen[j] = 0;
+            }
+        }
+
+        std::string filename = "128-rise-" + std::to_string(i) + ".binvox";
+        writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+
+        // for (int j = 0; j < m_3d_temperatures.size(); j++) {
+        //     cout << m_3d_temperatures[j] << endl;
+        // }
         // temps are nan when in release mode but not in debug
     }
 
@@ -164,26 +186,50 @@ void Bread::init() {
     cout << "done!" << endl;
 
     constructMockTemp();
-
     m_gradVector = calcGradient(m_mock_temp);
 
     generateGaussianFilter();
     // convolveGaussian();
 
-    warpBubbles(m_gradVector);
-    rise(m_gradVector);
+    // std::vector<bool> warped = warpBubbles(m_gradVector);
+    // std::vector<bool> risen = rise(m_gradVector, warped);
 
-    for (int i = 0; i < m_voxels.size(); i++) {
-        int x, y, z;
-        voxelToIndices(i, x, y, z);
-        if (z < dimZ / 2) {
-            m_voxels[i] = 0;
-        }
-    }
+    // for (int i = 0; i < m_voxels.size(); i++) {
+    //     int x, y, z;
+    //     voxelToIndices(i, x, y, z);
+    //     if (z < dimZ / 2) {
+    //         risen[i] = 0;
+    //     }
+    // }
 
-    writeBinvox("128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
+    // writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
 
     cout << "done!" << endl;
+}
+
+void Bread::saveP(const std::string& filepath) {
+    std::ofstream out(filepath, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("Failed to open file for writing: " + filepath);
+    }
+
+    size_t size = m_P.size();
+    out.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    out.write(reinterpret_cast<const char*>(m_P.data()), size * sizeof(int));
+    out.close();
+}
+
+void Bread::loadP(const std::string& filepath) {
+    std::ifstream in(filepath, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Failed to open file for reading: " + filepath);
+    }
+
+    size_t size;
+    in.read(reinterpret_cast<char*>(&size), sizeof(size));
+    m_P.resize(size);
+    in.read(reinterpret_cast<char*>(m_P.data()), size * sizeof(int));
+    in.close();
 }
 
 void Bread::saveDistanceVoxels(const std::string& filepath) {
@@ -271,7 +317,7 @@ void Bread::distanceVoxels() {
                 int idx;
                 indicesToVoxel(x, y, z, idx);
                 if (!m_voxels[idx]) {
-                    m_distance_voxels[idx] = 0.f;
+                    m_distance_voxels[idx] = -1.f;
                     continue;
                 }
 
@@ -382,12 +428,27 @@ void Bread::indicesToVoxel(int x, int y, int z, int &index) {
 }
 
 void Bread::voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ) {
-    worldX = (x + 0.5f) / dimX;
-    worldY = (y + 0.5f) / dimY;
-    worldZ = (z + 0.5f) / dimZ;
-    worldX = scale * worldX + translateX;
-    worldY = scale * worldY + translateY;
-    worldZ = scale * worldZ + translateZ;
+    float x_n = (x + 0.5f) / dimX;
+    float y_n = (y + 0.5f) / dimY;
+    float z_n = (z + 0.5f) / dimZ;
+
+    worldX = scale * x_n + translateX;
+    worldY = scale * y_n + translateY;
+    worldZ = scale * z_n + translateZ;
+}
+
+void Bread::spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z) {
+    float x_n = (worldX - translateX) / scale;
+    float y_n = (worldY - translateY) / scale;
+    float z_n = (worldZ - translateZ) / scale;
+
+    x = static_cast<int>(std::floor(x_n * dimX));
+    y = static_cast<int>(std::floor(y_n * dimY));
+    z = static_cast<int>(std::floor(z_n * dimZ));
+
+    x = std::clamp(x, 0, dimX - 1);
+    y = std::clamp(y, 0, dimY - 1);
+    z = std::clamp(z, 0, dimZ - 1);
 }
 
 bool Bread::voxelAt(int x, int y, int z) {
@@ -428,7 +489,7 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
 
                 // std::cout << distance << std::endl; // uncomment for checking that distance calculations are correct
                 // add some padding around the crust
-                if (distance <= radius && m_distance_voxels[idx] >= 3) {
+                if (distance <= radius && m_distance_voxels[idx] >= m_crust_thickness) {
                     m_voxels[idx] = 0;
                     // modify P
                     m_P[idx] = std::max(m_P[idx], radius);
@@ -643,6 +704,20 @@ void Bread::initTemperatures(){
     cout << largest << endl;
     m_temperatures.resize(int(largest));
     m_temperatures.assign(int(largest), 298.0); //23 degrees celsius for every location
+}
+
+void Bread::fillTemps() {
+    cout << "temp 0 " << m_temperatures[0] << endl;
+    for (int i = 0; i < m_voxels.size(); i++) {
+        if (m_distance_voxels[i] <= m_crust_thickness) {
+            // cout << "dist " << m_distance_voxels[i] << endl;
+            // cout << "hello " << endl;
+            m_3d_temperatures[i] = static_cast<float>(m_temperatures[0]);
+        } else {
+            int dist = static_cast<int>(m_distance_voxels[i]);
+            m_3d_temperatures[i] = static_cast<float>(m_temperatures[dist]);
+        }
+    }
 }
 
 void Bread::heatMap() {

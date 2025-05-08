@@ -33,21 +33,34 @@ private:
     void saveDistanceVoxels(const std::string& filepath);
     void loadDistanceVoxels(const std::string& filepath);
 
+    void saveP(const std::string& filepath);
+    void loadP(const std::string& filepath);
+
     // parameters
     // temperature deformation
-    float p = 2.0;
+    float p = 3.0;
     // rising
-    float S = 2;
+    float S = 1.1;
+    float S_change = S - 1.f;
+
+    int m_crust_thickness = 3;
 
     // deformation
-    void warpBubbles(std::vector<Eigen::Vector3f> grad);
-    void rise(std::vector<Eigen::Vector3f> grad);
+    std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);
+    std::vector<bool> rise(std::vector<Eigen::Vector3f> grad, std::vector<bool> inputVec, float scaleAmt);
     void constructMockTemp();
+    void constructTemp();
     std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
     void convolveGaussian();
     void generateGaussianFilter();
     float trilinearSampleVoxel(float x, float y, float z);
+    void spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z);
     std::vector<float> m_mock_temp;
+    std::vector<float> m_temp;
+
+    void fillTemps();
+
+    std::vector<float> m_3d_temperatures;
 
     int m_filterRadius = 1; // change radius of filter
     std::vector<float> m_gaussianKernel;
@@ -360,7 +373,7 @@ private:
     std::vector<double> m_W;
     std::vector<double> m_p;
     double timestep = 30.0; // maybe should be like 30??
-    int bakingIterations = 100;
+    int bakingIterations = 10;
     void initTemperatures();
     void bake();
     void initBake();
