@@ -38,14 +38,14 @@ private:
 
     // parameters
     // temperature deformation
-    float p = 6.0;
+    float p = 3.0;
     // rising
     float S = 1.1;
     float S_y = 1.2;
     float S_change = S - 1.f;
     float S_change_y = S_y - 1.f;
 
-    int m_crust_thickness = 5;
+    int m_crust_thickness = 3;
 
     // deformation
     std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);
@@ -375,7 +375,7 @@ private:
     std::vector<double> m_W;
     std::vector<double> m_p;
     double timestep = 30.0; // maybe should be like 30??
-    int bakingIterations = 48;
+    int bakingIterations = 60;
     void initTemperatures();
     void bake();
     void initBake();
