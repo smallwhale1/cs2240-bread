@@ -127,8 +127,10 @@ void Bread::init() {
     }
 
     // distanceVoxels();
-    generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 9);
+    // generateSphere(0, 0, 0, 2);
+    // generateBubbles(1, 5); // sourdough
+    // generateBubbles(0, 2); // sandwich
+    generateBubbles(1, 8);
 
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
@@ -148,12 +150,12 @@ void Bread::init() {
     writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     initTemperatures();
-    initBake();
+    // initBake();
 
-    for (int i = 0; i < bakingIterations; i++) {
-        bake();
-        // temps are nan when in release mode but not in debug
-    }
+    // for (int i = 0; i < bakingIterations; i++) {
+    //     bake();
+    //     // temps are nan when in release mode but not in debug
+    // }
 
     for (int i = 0; i < m_temperatures.size(); i++) {
         cout << m_temperatures[i] - 273.15 << endl;
@@ -448,9 +450,6 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 164; // resolution of proving vol in each spatial coordinate
-    float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
-    float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
         // subtract spheres of minRadius
         int numSpheres = k / pow(radius, d);
