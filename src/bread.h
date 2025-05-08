@@ -53,6 +53,7 @@ private:
     float trilinearSampleVoxel(float x, float y, float z);
     void spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z);
     std::vector<float> m_mock_temp;
+    std::vector<float> m_temp;
 
     void fillTemps();
 
