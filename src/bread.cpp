@@ -138,7 +138,7 @@ void Bread::init() {
         // cout << "x: " << x << endl;
         // cout << "y: " << y << endl;
         // cout << "z: " << z << endl;
-        if (z != dimZ / 2) {
+        if (z < dimZ / 2) {
             // cout << "hi" << endl;
             // set to 0
             voxelCopy[i] = 0;
@@ -176,7 +176,7 @@ void Bread::init() {
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
         voxelToIndices(i, x, y, z);
-        if (z != dimZ / 2) {
+        if (z < dimZ / 2) {
             m_voxels[i] = 0;
         }
     }

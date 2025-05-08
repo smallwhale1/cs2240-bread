@@ -371,8 +371,8 @@ void Bread::rise(std::vector<Vector3f> grad) {
                     continue;
 
                 deformedVoxels[originalInd] = m_voxels[newIndex];
-                if (m_P[rstIndex] != 0) {
-                    for (int yy = dimY; yy > v; yy--) {
+                if (deformedVoxels[originalInd] == 1) {
+                    for (int yy = dimY; yy > xyzY; yy--) {
                         int yyInd;
                         int yyIndLess;
                         indicesToVoxel(xyzX, yy, xyzZ, yyInd);
