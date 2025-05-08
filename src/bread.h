@@ -37,6 +37,22 @@ private:
     void saveP(const std::string& filepath);
     void loadP(const std::string& filepath);
 
+    // bubble gen
+    // DEFAULT BAGUETTE
+    int r = 128; // resolution of proving vol in each spatial coordinate
+    float k = 0.06 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
+    float d = 1.63f; // fractal exponent for likelihood of spheres given radii
+
+    // SANDWICH
+    // int r = 190;
+    // float k = 0.27 * pow(r, 3) * 0.05;
+    // float d = 3.f;
+
+    // SOURDOUGH
+    // float k = 0.075 * pow(r, 3) * 0.05;
+    // int r = 164
+    // float d = 1.6
+
     // parameters
     // temperature deformation
     float p = 3.0;
