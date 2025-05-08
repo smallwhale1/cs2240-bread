@@ -138,6 +138,7 @@ void Bread::init() {
 
     initTemperatures();
     initBake();
+    generateGaussianFilter();
 
     m_3d_temperatures.resize(m_voxels.size());
 
@@ -148,21 +149,22 @@ void Bread::init() {
         // write out
 
         m_gradVector = calcGradient(m_3d_temperatures);
+        // convolveGaussian();
         std::vector<bool> warped = warpBubbles(m_gradVector);
-        // std::vector<bool> risen = rise(m_gradVector, warped,
-        //                                (i + 1) * (S_change / bakingIterations),
-        //                                (i + 1) * (S_change_y / bakingIterations));
+        std::vector<bool> risen = rise(m_gradVector, warped,
+                                       (i + 1) * (S_change / bakingIterations),
+                                       (i + 1) * (S_change_y / bakingIterations));
 
         for (int j = 0; j < m_voxels.size(); j++) {
             int x, y, z;
             voxelToIndices(j, x, y, z);
             if (z < dimZ / 2) {
-                warped[j] = 0;
+                risen[j] = 0;
             }
         }
 
         std::string filename = "128-rise-" + std::to_string(i) + ".binvox";
-        writeBinvox(filename, dimX, dimY, dimZ, warped, translateX, translateY, translateZ, scale);
+        writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
 
         // for (int j = 0; j < m_3d_temperatures.size(); j++) {
         //     cout << m_3d_temperatures[j] << endl;
@@ -178,10 +180,10 @@ void Bread::init() {
 
     cout << "done!" << endl;
 
-    constructMockTemp();
-    m_gradVector = calcGradient(m_3d_temperatures);
+    // constructMockTemp();
+    // m_gradVector = calcGradient(m_3d_temperatures);
 
-    generateGaussianFilter();
+    // generateGaussianFilter();
     // convolveGaussian();
 
     // std::vector<bool> warped = warpBubbles(m_gradVector);
