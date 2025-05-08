@@ -29,7 +29,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bread_128.binvox";
+    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -97,7 +97,7 @@ void Bread::init() {
     // extractVoxelSurfaceToOBJ(voxels, dim_X, dim_Y, dim_Z, "output.obj");
 
     // add padding around the edges to allow for rising
-    addPadding(5);
+    // addPadding(5);
 
     m_P.resize(m_voxels.size());
     std::fill(m_P.begin(), m_P.end(), 1);
@@ -159,7 +159,7 @@ void Bread::init() {
         cout << m_temperatures[i] - 273.15 << endl;
     }
 
-    heatMap();
+    // heatMap();
 
     constructTemp();
     // generateGaussianFilter();
@@ -550,7 +550,7 @@ void Bread::initBake() {
     m_p.assign(m_temperatures.size(), 285.0);
 
     // fill m_L
-    m_L.assign(m_distance_voxels.size(), 90.f)
+    m_L.assign(m_distance_voxels.size(), 96.f);
 
 }
 
@@ -619,6 +619,7 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
     //ok so this is based on me estimating one of the images that shows the crust thickness is 3.125% of the number of voxels when fully baked
 
     // a* [4.5e1.5] and b* [22.6e45.9]
+    std::cout << crust_thickness << std::endl;
 
     std::vector<std::vector<float>> rgb_colors; //L, lightness of color, 0-100 of black-white, ours will be 90-40 as unbaked-burnt;
         //channel 2 is positoin a between red and green (-120-+120);
@@ -627,7 +628,7 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
     std::cout << "adding crust" << std::endl;
     for(int i = 0; i < m_distance_voxels.size(); i++){
 
-        std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
+        // std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
 
         //voxel that is within crust distance, has a temp > 120C/393.15K, and has water activity < 0.6 //increasing temperature decreases water activity
         if(m_distance_voxels[i] < crust_thickness && m_distance_voxels[i] != 0 && m_temperatures[std::floor((m_distance_voxels[i]))] > 390.f && dWdt[i] < 0.6f){
@@ -637,23 +638,30 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
                 crust_time++;
             }
 
-            float temp1 = std::pow(7.923310f, 6.f) + (std::pow(2.739710f, 6.f) / dWdt[i]);//water_acticity ranges from 0.1 to 0.6
-            float temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / dWdt[i])) / m_temperatures[i]); //temp at this voxel at this time
-            float k = std::pow(temp1, temp2);
-            m_L[i] += -k * m_L[i] * timestep; //decrements
+            double t1 = std::pow(7.923310f, 6.f);
+            float water_activity = m_W[m_distance_voxels[i]];
+            double t2 = (std::pow(2.739710f, 6.f) / water_activity);
+            double temp1 = t1 + t2; //water_acticity ranges from 0.1 to 0.6
+            double temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / water_activity)) / (m_temperatures[0])); //temp at this voxel at this time
+            double k = temp1 * std::pow(M_E, temp2);
+            k -= 34000;
+            k /= 10000;
+            m_L[i] += -k * m_L[i] * timestep / 60.f; //decrements
 
             float a = -4.5f + (.125 * crust_time * timestep);
             float b = 22.6 + (1.f * crust_time * timestep);
 
+            std::cout << k << std::endl;
+            std::cout << "new L: " + std::to_string(m_L[i]) << std::endl;
             std::vector<float> temp = labToRgb({m_L[i], a, b});
             rgb_colors.push_back({(float)i, temp[0], temp[1], temp[2]});
         }
 
     }
 
-    std::cout << "color size: " << rgb_colors.size() << std::endl;
+    // std::cout << "color size: " << rgb_colors.size() << std::endl;
     for(int i = 0; i < rgb_colors.size(); i++){
-        std::cout << "L: " << rgb_colors[i][0] << ", a: " << rgb_colors[i][1] << ", b: " << rgb_colors[i][2] << std::endl;
+        // std::cout << "L: " << rgb_colors[i][1] << ", a: " << rgb_colors[i][2] << ", b: " << rgb_colors[i][3] << std::endl;
     }
 
 
