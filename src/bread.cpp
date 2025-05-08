@@ -428,12 +428,13 @@ void Bread::indicesToVoxel(int x, int y, int z, int &index) {
 }
 
 void Bread::voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ) {
-    worldX = (x + 0.5f) / dimX;
-    worldY = (y + 0.5f) / dimY;
-    worldZ = (z + 0.5f) / dimZ;
-    worldX = scale * worldX + translateX;
-    worldY = scale * worldY + translateY;
-    worldZ = scale * worldZ + translateZ;
+    float x_n = (x + 0.5f) / dimX;
+    float y_n = (y + 0.5f) / dimY;
+    float z_n = (z + 0.5f) / dimZ;
+
+    worldX = scale * x_n + translateX;
+    worldY = scale * y_n + translateY;
+    worldZ = scale * z_n + translateZ;
 }
 
 void Bread::spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z) {
@@ -441,11 +442,14 @@ void Bread::spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int
     float y_n = (worldY - translateY) / scale;
     float z_n = (worldZ - translateZ) / scale;
 
-    x = static_cast<int>(x_n * dimX - 0.5f);
-    y = static_cast<int>(y_n * dimY - 0.5f);
-    z = static_cast<int>(z_n * dimZ - 0.5f);
-}
+    x = static_cast<int>(std::floor(x_n * dimX));
+    y = static_cast<int>(std::floor(y_n * dimY));
+    z = static_cast<int>(std::floor(z_n * dimZ));
 
+    x = std::clamp(x, 0, dimX - 1);
+    y = std::clamp(y, 0, dimY - 1);
+    z = std::clamp(z, 0, dimZ - 1);
+}
 
 bool Bread::voxelAt(int x, int y, int z) {
     return m_voxels[x * dimX * dimZ + z * dimZ + y];
