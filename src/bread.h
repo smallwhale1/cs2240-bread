@@ -38,14 +38,14 @@ private:
 
     // parameters
     // temperature deformation
-    float p = 3.0;
+    float p = 6.0;
     // rising
     float S = 1.1;
     float S_y = 1.2;
     float S_change = S - 1.f;
     float S_change_y = S_y - 1.f;
 
-    int m_crust_thickness = 3;
+    int m_crust_thickness = 5;
 
     // deformation
     std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);

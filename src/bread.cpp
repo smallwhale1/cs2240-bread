@@ -28,7 +28,7 @@ int Bread::toIndex(int x, int y, int z, int dimX, int dimY) {
 void Bread::init() {
     // specify voxel filepath
 
-    const std::string& filepath = "meshes-binvox/bun-128.binvox";
+    const std::string& filepath = "meshes-binvox/bun-256.binvox";
     // const std::string& filepath = "frames-48/128-rise-47.binvox";
     // const std::string& filepath = "256-original.binvox";
 
@@ -100,7 +100,7 @@ void Bread::init() {
 
     // PADDING
     // add padding around the edges to allow for rising
-    addPadding(10);
+    addPadding(20);
 
     m_P.resize(m_voxels.size());
     std::fill(m_P.begin(), m_P.end(), 1.0);
@@ -119,9 +119,9 @@ void Bread::init() {
 
     distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 11);
+    generateBubbles(1, 20);
 
-    const std::string pFile = "P-128.bin";
+    const std::string pFile = "P-256.bin";
     saveP(pFile);
 
     std::vector<bool> voxelCopy = m_voxels;
@@ -134,7 +134,7 @@ void Bread::init() {
         }
     }
 
-    writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    writeBinvox("256-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     initTemperatures();
     initBake();
@@ -163,7 +163,7 @@ void Bread::init() {
             }
         }
 
-        std::string filename = "128-rise-" + std::to_string(i) + ".binvox";
+        std::string filename = "256-rise-" + std::to_string(i) + ".binvox";
         writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
 
         // for (int j = 0; j < m_3d_temperatures.size(); j++) {
@@ -504,7 +504,7 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 184; // resolution of proving vol in each spatial coordinate
+    int r = 300; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
