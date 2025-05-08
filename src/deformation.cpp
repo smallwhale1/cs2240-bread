@@ -9,29 +9,43 @@ void Bread::constructMockTemp() {
     m_mock_temp.resize(m_distance_voxels.size());
 
     float crustTemp = 110.f;
-    float outerTemp = 114.f;
+    float outerTemp = 110.f;
     float centerTemp = 50.f;
-
-    float crustThickness = 3.0f;
 
     float minRadius = 0.f;
     float maxRadius = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
 
-    float effectiveMaxRadius = maxRadius - crustThickness;
+    float effectiveMaxRadius = maxRadius - m_crust_thickness;
 
     for (int i = 0; i < m_distance_voxels.size(); i++) {
         float temp = 0.f;
         if (m_distance_voxels[i] == -1) {
             temp = outerTemp;
-        } else if (m_distance_voxels[i] <= crustThickness) {
+        } else if (m_distance_voxels[i] <= m_crust_thickness) {
             temp = crustTemp;
         } else {
-            float distPastCrust = m_distance_voxels[i] - crustThickness;
+            float distPastCrust = m_distance_voxels[i] - m_crust_thickness;
             temp = centerTemp + ((effectiveMaxRadius - distPastCrust) / effectiveMaxRadius) * (crustTemp - centerTemp);
 
             temp = std::min(std::max(temp, centerTemp), crustTemp);
         }
         m_mock_temp[i] = temp;
+    }
+}
+
+void Bread::constructTemp() {
+    m_temp.resize(m_distance_voxels.size());
+
+    float outerTemp = 114.f; // not sure exactly what to make this
+
+    for (int i = 0; i < m_distance_voxels.size(); i++) {
+        float temp = 0.f;
+        if (m_distance_voxels[i] == 0.f) {
+            temp = outerTemp;
+        } else {
+            temp = m_temperatures[m_distance_voxels[i]];
+        }
+        m_temp[i] = temp;
     }
 }
 
@@ -278,7 +292,7 @@ float Bread::trilinearSampleVoxel(float x, float y, float z) {
     return c0 * (1 - xd) + c1 * xd;
 }
 
-void Bread::warpBubbles(std::vector<Vector3f> grad) {
+std::vector<bool> Bread::warpBubbles(std::vector<Vector3f> grad) {
     std::vector<bool> deformedVoxels;
     deformedVoxels.assign(m_voxels.size(), 0);
     std::vector<bool> visited;
@@ -310,12 +324,14 @@ void Bread::warpBubbles(std::vector<Vector3f> grad) {
         }
     }
 
-    for (int i = 0; i < m_voxels.size(); i++) {
-        m_voxels[i] = deformedVoxels[i];
-    }
+    return deformedVoxels;
+
+    // for (int i = 0; i < m_voxels.size(); i++) {
+    //     m_voxels[i] = deformedVoxels[i];
+    // }
 }
 
-void Bread::rise(std::vector<Vector3f> grad) {
+std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inputVec) {
     std::vector<bool> deformedVoxels(m_voxels.size(), false);
 
     for (int u = 0; u < dimX; u++) {
@@ -363,30 +379,17 @@ void Bread::rise(std::vector<Vector3f> grad) {
                 float worldZ;
 
                 voxelToSpatialCoords(rstX, rstY, rstZ, worldX, worldY, worldZ);
-                // cout << "OLD" << endl;
-                // cout << worldX << endl;
-                // cout << worldY << endl;
-                // cout << worldZ << endl;
 
+                // deform Y more?
                 worldX /= scaleFactor;
-                worldY /= scaleFactor;
+                worldY /= (scaleFactor * 1.2);
                 worldZ /= scaleFactor;
-
-                // cout << "NEW" << endl;
-                // cout << worldX << endl;
-                // cout << worldY << endl;
-                // cout << worldZ << endl;
 
                 int newX;
                 int newY;
                 int newZ;
 
                 spatialToVoxel(worldX, worldY, worldZ, newX, newY, newZ);
-
-                // cout << "NEW" << endl;
-                // cout << newX << endl;
-                // cout << newY << endl;
-                // cout << newZ << endl;
 
                 Vector3f xyz = Vector3f(newX, newY, newZ);
 
@@ -423,10 +426,10 @@ void Bread::rise(std::vector<Vector3f> grad) {
         }
     }
 
-    m_voxels = std::move(deformedVoxels);
+    return deformedVoxels;
+
+    // m_voxels = std::move(deformedVoxels);
 }
-
-
 
 // void Bread::rise(std::vector<Vector3f> grad) {
 //     std::vector<bool> deformedVoxels(m_voxels.size(), false);

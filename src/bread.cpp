@@ -83,8 +83,8 @@ void Bread::init() {
 
     file.close();
 
-    // // PADDING
-    // // add padding around the edges to allow for rising
+    // // // PADDING
+    // // // add padding around the edges to allow for rising
     // addPadding(10);
 
     m_P.resize(m_voxels.size());
@@ -128,19 +128,14 @@ void Bread::init() {
 
     distanceVoxels();
     generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 9);
+    generateBubbles(1, 11);
 
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
         voxelToIndices(i, x, y, z);
-        // cout << "x: " << x << endl;
-        // cout << "y: " << y << endl;
-        // cout << "z: " << z << endl;
         if (y < dimY / 2) {
-            // cout << "hi" << endl;
-            // set to 0
             voxelCopy[i] = 0;
         }
     }
@@ -150,8 +145,14 @@ void Bread::init() {
     initTemperatures();
     initBake();
 
+    m_3d_temperatures.resize(m_voxels.size());
+
     for (int i = 0; i < bakingIterations; i++) {
         bake();
+        fillTemps();
+        // for (int j = 0; j < m_3d_temperatures.size(); j++) {
+        //     cout << m_3d_temperatures[j] << endl;
+        // }
         // temps are nan when in release mode but not in debug
     }
 
@@ -170,8 +171,8 @@ void Bread::init() {
     generateGaussianFilter();
     // convolveGaussian();
 
-    // warpBubbles(m_gradVector);
-    rise(m_gradVector);
+    std::vector<bool> warped = warpBubbles(m_gradVector);
+    std::vector<bool> risen = rise(m_gradVector);
 
     for (int i = 0; i < m_voxels.size(); i++) {
         int x, y, z;
@@ -271,7 +272,7 @@ void Bread::distanceVoxels() {
                 int idx;
                 indicesToVoxel(x, y, z, idx);
                 if (!m_voxels[idx]) {
-                    m_distance_voxels[idx] = 0.f;
+                    m_distance_voxels[idx] = -1.f;
                     continue;
                 }
 
@@ -439,7 +440,7 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
 
                 // std::cout << distance << std::endl; // uncomment for checking that distance calculations are correct
                 // add some padding around the crust
-                if (distance <= radius && m_distance_voxels[idx] >= 3) {
+                if (distance <= radius && m_distance_voxels[idx] >= m_crust_thickness) {
                     m_voxels[idx] = 0;
                     // modify P
                     m_P[idx] = std::max(m_P[idx], radius);
@@ -654,6 +655,20 @@ void Bread::initTemperatures(){
     cout << largest << endl;
     m_temperatures.resize(int(largest));
     m_temperatures.assign(int(largest), 298.0); //23 degrees celsius for every location
+}
+
+void Bread::fillTemps() {
+    cout << "temp 0 " << m_temperatures[0] << endl;
+    for (int i = 0; i < m_voxels.size(); i++) {
+        if (m_distance_voxels[i] <= 0) {
+            // cout << "dist " << m_distance_voxels[i] << endl;
+            // cout << "hello " << endl;
+            m_3d_temperatures[i] = m_temperatures[0];
+        } else {
+            int dist = static_cast<int>(m_distance_voxels[i]);
+            m_3d_temperatures[i] = m_temperatures[dist];
+        }
+    }
 }
 
 void Bread::heatMap() {
