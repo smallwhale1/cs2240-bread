@@ -13,7 +13,7 @@
 #include <QRegularExpression>
 #include <QFileInfo>
 #include <cmath>
-#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
 
 using namespace std;
 
@@ -573,10 +573,6 @@ void Bread::fillIn() {
                             for (int w = startZ + 1; w < z; w++) {
                                 int index;
                                 indicesToVoxel(x, y, w, index);
-                                bool zz = m_voxels[index];
-                                if (m_voxels[index] == 0) {
-                                   // cout << "filling in" << endl;
-                                }
                                 m_voxels[index] = 1;
                             }
                         }
@@ -784,21 +780,21 @@ void Bread::heatMap() {
    }
 
 
-   cv::Mat mat(rows, cols, CV_32F);
+   // cv::Mat mat(rows, cols, CV_32F);
 
-   // Normalize data and fill matrix
-   for (int i = 0; i < rows; ++i)
-       for (int j = 0; j < cols; ++j)
-           mat.at<float>(i, j) = data[i][j];
+   // // Normalize data and fill matrix
+   // for (int i = 0; i < rows; ++i)
+   //     for (int j = 0; j < cols; ++j)
+   //         mat.at<float>(i, j) = data[i][j];
 
-   cv::Mat normalized;
-   cv::normalize(mat, normalized, 0, 255, cv::NORM_MINMAX);
-   normalized.convertTo(normalized, CV_8U);
+   // cv::Mat normalized;
+   // cv::normalize(mat, normalized, 0, 255, cv::NORM_MINMAX);
+   // normalized.convertTo(normalized, CV_8U);
 
-   cv::Mat colorMap;
-   cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
-   cv::imshow("Heatmap", colorMap);
-   cv::waitKey(0);
+   // cv::Mat colorMap;
+   // cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
+   // cv::imshow("Heatmap", colorMap);
+   // cv::waitKey(0);
 }
 
 void Bread::createCrust(int time, std::vector<double> dWdt){
