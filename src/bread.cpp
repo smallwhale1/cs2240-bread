@@ -29,7 +29,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bun_48x23x48.binvox";
+    const std::string& filepath = "meshes-binvox/bread_128.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -128,8 +128,9 @@ void Bread::init() {
     // BREAD LOGIC
 
     distanceVoxels();
-    generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 7);
+    cout << "distance" << endl;
+    // generateSphere(0, 0, 0, 2);
+    // generateBubbles(1, 7);
 
     std::vector<bool> voxelCopy = m_voxels;
     // do cross section
@@ -159,7 +160,7 @@ void Bread::init() {
         cout << m_temperatures[i] - 273.15 << endl;
     }
 
-    // heatMap();
+    heatMap();
 
     constructTemp();
     // generateGaussianFilter();
@@ -566,51 +567,51 @@ void Bread::initTemperatures(){
     crust_time = 0.f;
 }
 
-//void Bread::heatMap() {
-//    std::vector<std::vector<double>> data;
-//    int y = dimY/2;
-//    int rows = dimZ;
-//    int cols = dimX;
+void Bread::heatMap() {
+   std::vector<std::vector<double>> data;
+   int y = dimY/2;
+   int rows = dimZ;
+   int cols = dimX;
 
-//    for (int i = rows - 1; i > -1; i--) {
-//        std::vector<double> row;
-//        for (int j = 0; j < cols; j++) {
-//            float dist = m_distance_voxels[j * dimX * dimZ + i * dimZ + y];
-//            if (dist > 0.f) {
-//                int idx = dist - 1;
-//                row.push_back(m_temperatures[idx] - 273.15);
-//                cout << idx << endl;
-//            } else {
-//                row.push_back(145.0);
-//            }
+   for (int i = rows - 1; i > -1; i--) {
+       std::vector<double> row;
+       for (int j = 0; j < cols; j++) {
+           float dist = m_distance_voxels[j * dimX * dimZ + i * dimZ + y];
+           if (dist > 0.f) {
+               int idx = dist - 1;
+               row.push_back(m_temperatures[idx] - 273.15);
+               cout << idx << endl;
+           } else {
+               row.push_back(145.0);
+           }
 
-//            // if (voxelAt(j, y, i)) {
-//            //     row.push_back(1.0);
-//            // } else {
-//            //     row.push_back(0.0);
-//            // }
+           // if (voxelAt(j, y, i)) {
+           //     row.push_back(1.0);
+           // } else {
+           //     row.push_back(0.0);
+           // }
 
-//        }
-//        data.push_back(row);
-//    }
+       }
+       data.push_back(row);
+   }
 
 
-//    cv::Mat mat(rows, cols, CV_32F);
+   cv::Mat mat(rows, cols, CV_32F);
 
-//    // Normalize data and fill matrix
-//    for (int i = 0; i < rows; ++i)
-//        for (int j = 0; j < cols; ++j)
-//            mat.at<float>(i, j) = data[i][j];
+   // Normalize data and fill matrix
+   for (int i = 0; i < rows; ++i)
+       for (int j = 0; j < cols; ++j)
+           mat.at<float>(i, j) = data[i][j];
 
-//    cv::Mat normalized;
-//    cv::normalize(mat, normalized, 0, 255, cv::NORM_MINMAX);
-//    normalized.convertTo(normalized, CV_8U);
+   cv::Mat normalized;
+   cv::normalize(mat, normalized, 0, 255, cv::NORM_MINMAX);
+   normalized.convertTo(normalized, CV_8U);
 
-//    cv::Mat colorMap;
-//    cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
-//    cv::imshow("Heatmap", colorMap);
-//    cv::waitKey(0);
-//}
+   cv::Mat colorMap;
+   cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
+   cv::imshow("Heatmap", colorMap);
+   cv::waitKey(0);
+}
 
 void Bread::createCrust(int time, std::vector<double> dWdt){
 
@@ -625,7 +626,9 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
         //channel 2 is positoin a between red and green (-120-+120);
         //chnanel 3 is position b between yellow and blue (-120-+120)
 
-    std::cout << "adding crust" << std::endl;
+    bool addToCrust = true;
+
+
     for(int i = 0; i < m_distance_voxels.size(); i++){
 
         // std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
@@ -633,10 +636,11 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
         //voxel that is within crust distance, has a temp > 120C/393.15K, and has water activity < 0.6 //increasing temperature decreases water activity
         if(m_distance_voxels[i] < crust_thickness && m_distance_voxels[i] != 0 && m_temperatures[std::floor((m_distance_voxels[i]))] > 390.f && dWdt[i] < 0.6f){
 
-            //how long have we been updating the crust color, hopefuly goes for about 20 iterations
-            if(i == 0){
-                crust_time++;
+            if (addToCrust) {
+                crust_time ++;
+                addToCrust = false;
             }
+            //how long have we been updating the crust color, hopefuly goes for about 20 iterations
 
             double t1 = std::pow(7.923310f, 6.f);
             float water_activity = m_W[m_distance_voxels[i]];
@@ -648,16 +652,17 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
             k /= 10000;
             m_L[i] += -k * m_L[i] * timestep / 60.f; //decrements
 
-            float a = -4.5f + (.125 * crust_time * timestep);
-            float b = 22.6 + (1.f * crust_time * timestep);
+            float a = -4.5f + (.75 * crust_time);
+            float b = 22.6 + (2.9f * crust_time);
 
-            std::cout << k << std::endl;
-            std::cout << "new L: " + std::to_string(m_L[i]) << std::endl;
+            // std::cout << k << std::endl;
+            std::cout << m_L[i] << " " << a << " " << b << std::endl;
             std::vector<float> temp = labToRgb({m_L[i], a, b});
             rgb_colors.push_back({(float)i, temp[0], temp[1], temp[2]});
         }
 
     }
+    // std::cout << crust_time << std::endl;
 
     // std::cout << "color size: " << rgb_colors.size() << std::endl;
     for(int i = 0; i < rgb_colors.size(); i++){
