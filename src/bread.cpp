@@ -87,7 +87,7 @@ void Bread::readBinvox(const std::string& filepath) {
 
 void Bread::init() {
     // specify voxel filepath
-    const std::string& filepath = "128-60-2/128-original.binvox";
+    const std::string& filepath = "focaccia-final.binvox";
     readBinvox(filepath);
 
     // const std::string& filepath = "meshes-binvox/bun-128.binvox";
@@ -178,7 +178,7 @@ void Bread::init() {
 
     marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
 
-    saveOBJ("frames/128-original.obj", vertices, triangles);
+    saveOBJ("focaccia-final.obj", vertices, triangles);
 
     // // BREAD LOGIC
 
