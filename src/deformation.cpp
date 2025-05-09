@@ -189,65 +189,63 @@ void Bread::generateGaussianFilter() {
     }
 }
 
-// TODO: revisit
 void Bread::convolveGaussian() {
-    std::vector<float> tempCopy = m_mock_temp;
+    std::vector<Eigen::Vector3f> tempCopy = m_gradVector;
 
-    for (int idx = 0; idx < m_mock_temp.size(); idx++) {
-        m_mock_temp[idx] = 0;
+    // x
+    for (int idx = 0; idx < m_gradVector.size(); idx++) {
         int x, y, z;
         voxelToIndices(idx, x, y, z);
+        Eigen::Vector3f smoothed = Eigen::Vector3f::Zero();
 
-        float temp = 0;
-        for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
-            int idx_prime;
-            int x_prime = fmax(0, fmin(x + k, dimX - 1));
-            indicesToVoxel(x_prime, y, z, idx_prime);
-
-            // temp += tempCopy[idx_prime] * m_gaussianKernel[k];
-            temp += tempCopy[idx_prime] * m_gaussianKernel[k + m_filterRadius];
+        for (int k = -m_filterRadius; k <= m_filterRadius; k++) {
+            int xk = std::clamp(x + k, 0, dimX - 1);
+            int idxPrime;
+            indicesToVoxel(xk, y, z, idxPrime);
+            smoothed += m_gaussianKernel[k + m_filterRadius] * tempCopy[idxPrime];
         }
-        m_mock_temp[idx] += temp;
+
+        m_gradVector[idx] = smoothed;
     }
 
-    tempCopy = m_mock_temp;
+    tempCopy = m_gradVector;
 
-    for (int idx = 0; idx < m_mock_temp.size(); idx++) {
-        m_mock_temp[idx] = 0;
+    // y
+    for (int idx = 0; idx < m_gradVector.size(); idx++) {
         int x, y, z;
         voxelToIndices(idx, x, y, z);
+        Eigen::Vector3f smoothed = Eigen::Vector3f::Zero();
 
-        float temp = 0;
-        for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
-            int idx_prime;
-            int y_prime = fmax(0, fmin(y + k, dimY - 1));
-            indicesToVoxel(x, y_prime, z, idx_prime);
-
-            temp += tempCopy[idx_prime] * m_gaussianKernel[k];
+        for (int k = -m_filterRadius; k <= m_filterRadius; k++) {
+            int yk = std::clamp(y + k, 0, dimY - 1);
+            int idxPrime;
+            indicesToVoxel(x, yk, z, idxPrime);
+            smoothed += m_gaussianKernel[k + m_filterRadius] * tempCopy[idxPrime];
         }
-        m_mock_temp[idx] += temp;
+
+        m_gradVector[idx] = smoothed;
     }
 
-    tempCopy = m_mock_temp;
+    tempCopy = m_gradVector;
 
-    for (int idx = 0; idx < m_mock_temp.size(); idx++) {
-        m_mock_temp[idx] = 0;
+    // z
+    for (int idx = 0; idx < m_gradVector.size(); idx++) {
         int x, y, z;
         voxelToIndices(idx, x, y, z);
+        Eigen::Vector3f smoothed = Eigen::Vector3f::Zero();
 
-        float temp = 0;
-        for (int k = -1 * m_filterRadius; k <= m_filterRadius; k++) {
-            int idx_prime;
-            int z_prime = fmax(0, fmin(z + k, dimZ - 1));
-            indicesToVoxel(x, y, z_prime, idx_prime);
-
-            temp += tempCopy[idx_prime] * m_gaussianKernel[k];
+        for (int k = -m_filterRadius; k <= m_filterRadius; k++) {
+            int zk = std::clamp(z + k, 0, dimZ - 1);
+            int idxPrime;
+            indicesToVoxel(x, y, zk, idxPrime);
+            smoothed += m_gaussianKernel[k + m_filterRadius] * tempCopy[idxPrime];
         }
-        m_mock_temp[idx] += temp;
+
+        m_gradVector[idx] = smoothed;
     }
 }
 
-float Bread::trilinearSampleVoxel(float x, float y, float z) {
+float Bread::trilinearSampleVoxel(float x, float y, float z, std::vector<bool>& inputVec) {
     int x0 = floor(x);
     int x1 = x0 + 1;
     int y0 = floor(y);
@@ -261,7 +259,7 @@ float Bread::trilinearSampleVoxel(float x, float y, float z) {
     auto getVoxFloat = [&](int xi, int yi, int zi) -> float {
         int idx;
         indicesToVoxel(xi, yi, zi, idx);
-        return m_voxels[idx] ? 1.0f : 0.0f;
+        return inputVec[idx] ? 1.0f : 0.0f;
     };
 
     float xd = x - x0;
@@ -315,10 +313,10 @@ std::vector<bool> Bread::warpBubbles(std::vector<Vector3f> grad) {
                 if (newLoc[0] < 0 || newLoc[0] >= dimX || newLoc[1] < 0 || newLoc[1] >= dimY || newLoc[2] < 0 || newLoc[2] >= dimZ) {
                     deformedVoxels[index] = 0;
                 } else {
-                    deformedVoxels[index] = m_voxels[newIndex];
+                    // deformedVoxels[index] = m_voxels[newIndex];
 
-                    // float sample = trilinearSampleVoxel(newLoc[0], newLoc[1], newLoc[2]);
-                    // deformedVoxels[index] = sample > 0.5f;
+                    float sample = trilinearSampleVoxel(newLoc[0], newLoc[1], newLoc[2], m_voxels);
+                    deformedVoxels[index] = sample > 0.5f;
                 }
             }
         }
@@ -330,8 +328,7 @@ std::vector<bool> Bread::warpBubbles(std::vector<Vector3f> grad) {
     //     m_voxels[i] = deformedVoxels[i];
     // }
 }
-
-std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inputVec, float scaleAmt) {
+std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inputVec, float scaleAmt, float scaleAmtY) {
     std::vector<bool> deformedVoxels(m_voxels.size(), false);
     cout << "scale: " << 1.0 + scaleAmt << endl;
 
@@ -342,31 +339,8 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
                 int originalInd;
                 indicesToVoxel(u, v, w, originalInd);
 
-                // // i think this is because we just applied deformation and this
-                // // gets the deformed location
-                // Vector3f rst;
-                // // if (m_P[originalInd] == 0) {
-                // //     rst = Vector3f(u, v, w) - p * grad[originalInd];
-                // // } else {
-                //     rst = Vector3f(u, v, w) - p * grad[originalInd];
-                // // }
-
-                // int rstX = static_cast<int>(rst[0]);
-                // int rstY = static_cast<int>(rst[1]);
-                // int rstZ = static_cast<int>(rst[2]);
-
-                // if (rstX < 0 || rstX >= dimX ||
-                //     rstY < 0 || rstY >= dimY ||
-                //     rstZ < 0 || rstZ >= dimZ)
-                //     continue;
-
-                // int rstIndex;
-                // indicesToVoxel(rstX, rstY, rstZ, rstIndex);
-
-                // if (rstIndex < 0 || rstIndex >= m_voxels.size())
-                //     continue;
-
                 float scaleFactor = (1.0 + scaleAmt);
+                float scaleFactorY = (1.0 + scaleAmtY);
 
                 float worldX;
                 float worldY;
@@ -375,8 +349,8 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
                 voxelToSpatialCoords(u, v, w, worldX, worldY, worldZ);
 
                 worldX /= scaleFactor;
-                worldY /= scaleFactor;
-                // worldY /= (scaleFactor * 1.2);
+                worldY /= scaleFactorY;
+                // worldY /= (scaleFactor * 1.05);
                 worldZ /= scaleFactor;
 
                 int newX;
@@ -402,7 +376,9 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
                 if (newIndex < 0 || newIndex >= m_voxels.size())
                     continue;
 
-                deformedVoxels[originalInd] = inputVec[newIndex];
+                // deformedVoxels[originalInd] = inputVec[newIndex];
+                float sample = trilinearSampleVoxel(xyzX, xyzY, xyzZ, inputVec);
+                deformedVoxels[originalInd] = sample > 0.5f;
             }
         }
     }

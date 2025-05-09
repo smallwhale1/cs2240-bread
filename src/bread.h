@@ -13,6 +13,7 @@ public:
     void init();
 
 private:
+    int m_frame = 0;
     std::vector<bool> m_voxels;
     int dimX, dimY, dimZ;
     float translateX = 0.f;
@@ -41,19 +42,21 @@ private:
     float p = 3.0;
     // rising
     float S = 1.1;
+    float S_y = 1.2;
     float S_change = S - 1.f;
+    float S_change_y = S_y - 1.f;
 
     int m_crust_thickness = 3;
 
     // deformation
     std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);
-    std::vector<bool> rise(std::vector<Eigen::Vector3f> grad, std::vector<bool> inputVec, float scaleAmt);
+    std::vector<bool> rise(std::vector<Eigen::Vector3f> grad, std::vector<bool> inputVec, float scaleAmt, float scaleAmtY);
     void constructMockTemp();
     void constructTemp();
     std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
     void convolveGaussian();
     void generateGaussianFilter();
-    float trilinearSampleVoxel(float x, float y, float z);
+    float trilinearSampleVoxel(float x, float y, float z, std::vector<bool>& inputVec);
     void spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z);
     std::vector<float> m_mock_temp;
     std::vector<float> m_temp;
@@ -373,7 +376,7 @@ private:
     std::vector<double> m_W;
     std::vector<double> m_p;
     double timestep = 30.0; // maybe should be like 30??
-    int bakingIterations = 10;
+    int bakingIterations = 39;
     void initTemperatures();
     void bake();
     void initBake();

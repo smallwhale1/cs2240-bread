@@ -28,8 +28,9 @@ int Bread::toIndex(int x, int y, int z, int dimX, int dimY) {
 void Bread::init() {
     // specify voxel filepath
 
-    // absolute right now
-    const std::string& filepath = "meshes-binvox/bread_128.binvox";
+    const std::string& filepath = "meshes-binvox/bun-128.binvox";
+    // const std::string& filepath = "frames-48/128-rise-47.binvox";
+    // const std::string& filepath = "256-original.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -83,15 +84,6 @@ void Bread::init() {
 
     file.close();
 
-    // PADDING
-    // add padding around the edges to allow for rising
-    addPadding(10);
-
-    m_P.resize(m_voxels.size());
-    std::fill(m_P.begin(), m_P.end(), 1.0);
-
-    fillIn();
-
     // NAIVE
     // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
@@ -102,19 +94,18 @@ void Bread::init() {
 
     // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
 
-    // saveOBJ("bread_mesh_128_deform.obj", vertices, triangles);
-
-    // int x, y, z;
-    // voxelToIndices(200, x, y, z);
-    // std::cout << "x: " << x << std::endl;
-    // std::cout << "y: " << y << std::endl;
-    // std::cout << "z: " << z << std::endl;
-
-    // int i;
-    // indicesToVoxel(x, y, z, i);
-    // std::cout << "i: " << i << std::endl;
+    // saveOBJ("256.obj", vertices, triangles);
 
     // BREAD LOGIC
+
+    // PADDING
+    // add padding around the edges to allow for rising
+    addPadding(10);
+
+    m_P.resize(m_voxels.size());
+    std::fill(m_P.begin(), m_P.end(), 1.0);
+
+    fillIn();
 
     // const std::string distFile = "distance-128.bin";
 
@@ -126,27 +117,41 @@ void Bread::init() {
     //     saveDistanceVoxels(distFile);
     // }
 
+
+
     distanceVoxels();
-    generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 11);
+    // std::vector<bool> voxelCopy = m_voxels;
+    // for (int i = 0; i < m_voxels.size(); i++) {
+    //     int x, y, z;
+    //     voxelToIndices(i, x, y, z);
+    //     if (z > dimZ / 8) {
+    //         voxelCopy[i] = 0;
+    //     }
+    // }
+
+    // m_frame++;
+    // writeBinvox("128-original-" + std::to_string(m_frame) + ".binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    // generateSphere(0, 0, 0, 2);
+    generateBubbles(1, 8);
 
     const std::string pFile = "P-128.bin";
     saveP(pFile);
 
-    std::vector<bool> voxelCopy = m_voxels;
+    // voxelCopy = m_voxels;
     // do cross section
-    for (int i = 0; i < m_voxels.size(); i++) {
-        int x, y, z;
-        voxelToIndices(i, x, y, z);
-        if (z < dimZ / 2) {
-            voxelCopy[i] = 0;
-        }
-    }
+    // for (int i = 0; i < m_voxels.size(); i++) {
+    //     int x, y, z;
+    //     voxelToIndices(i, x, y, z);
+    //     if (z < dimZ / 2) {
+    //         voxelCopy[i] = 0;
+    //     }
+    // }
 
-    writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    // writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     initTemperatures();
     initBake();
+    generateGaussianFilter();
 
     m_3d_temperatures.resize(m_voxels.size());
 
@@ -157,18 +162,22 @@ void Bread::init() {
         // write out
 
         m_gradVector = calcGradient(m_3d_temperatures);
+        // convolveGaussian();
         std::vector<bool> warped = warpBubbles(m_gradVector);
-        std::vector<bool> risen = rise(m_gradVector, warped, (i + 1) * (S_change / bakingIterations));
+        std::vector<bool> risen = rise(m_gradVector, warped,
+                                       (i + 1) * (S_change / bakingIterations),
+                                       (i + 1) * (S_change_y / bakingIterations));
 
+        m_frame++;
         for (int j = 0; j < m_voxels.size(); j++) {
             int x, y, z;
             voxelToIndices(j, x, y, z);
-            if (z < dimZ / 2) {
+            if (z > dimZ / 48 * m_frame) {
                 risen[j] = 0;
             }
         }
 
-        std::string filename = "128-rise-" + std::to_string(i) + ".binvox";
+        std::string filename = "128-rise-" + std::to_string(m_frame) + ".binvox";
         writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
 
         // for (int j = 0; j < m_3d_temperatures.size(); j++) {
@@ -185,10 +194,10 @@ void Bread::init() {
 
     cout << "done!" << endl;
 
-    constructMockTemp();
-    m_gradVector = calcGradient(m_mock_temp);
+    // constructMockTemp();
+    // m_gradVector = calcGradient(m_3d_temperatures);
 
-    generateGaussianFilter();
+    // generateGaussianFilter();
     // convolveGaussian();
 
     // std::vector<bool> warped = warpBubbles(m_gradVector);
@@ -197,7 +206,7 @@ void Bread::init() {
     // for (int i = 0; i < m_voxels.size(); i++) {
     //     int x, y, z;
     //     voxelToIndices(i, x, y, z);
-    //     if (y < dimY / 2) {
+    //     if (z < dimZ / 2) {
     //         risen[i] = 0;
     //     }
     // }
@@ -509,11 +518,24 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     // see page 9 for some constants. currently using baguette settings
-    int r = 164; // resolution of proving vol in each spatial coordinate
+    int r = 184; // resolution of proving vol in each spatial coordinate
     float k = 0.07 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
     float d = 2.78; // fractal exponent for likelihood of spheres given radii
     while (radius <= maxRadius) {
         // subtract spheres of minRadius
+        m_frame++;
+        std::vector<bool> voxelCopy = m_voxels;
+        for (int i = 0; i < m_voxels.size(); i++) {
+            int x, y, z;
+            voxelToIndices(i, x, y, z);
+            if (z > dimZ / 48 * m_frame) {
+                voxelCopy[i] = 0;
+            }
+        }
+
+
+        writeBinvox("128-original-" + std::to_string(m_frame) + ".binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+
         int numSpheres = k / pow(radius, d);
         std::cout << "numSpheres: " << numSpheres << std::endl;
         for (int i = 0; i < numSpheres; i++) {
@@ -525,6 +547,8 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
         }
         // increment
         radius++;
+
+
     }
 }
 
