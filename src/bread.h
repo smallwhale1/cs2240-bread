@@ -92,6 +92,11 @@ private:
     void extractVoxelSurfaceToOBJ(const std::vector<bool>& m_voxels, int dimX, int dimY, int dimZ, const std::string& filename);
     int toIndex(int x, int y, int z, int dimX, int dimY);
 
+    std::vector<float> m_L;
+    float crust_time;
+    void createCrust(int time, std::vector<double> dWdt);
+    std::vector<float> labToRgb(std::vector<float> color);
+
     const int edgeTable[256] =
         {
             0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
@@ -392,9 +397,9 @@ private:
     std::vector<double> m_W;
     std::vector<double> m_p;
     double timestep = 30.0; // maybe should be like 30??
-    int bakingIterations = 39;
+    int bakingIterations = 100;
     void initTemperatures();
-    void bake();
+    void bake(int time);
     void initBake();
     float prevDensity;
     void heatMap();
