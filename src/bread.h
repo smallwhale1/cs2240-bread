@@ -33,6 +33,8 @@ private:
     void saveDistanceVoxels(const std::string& filepath);
     void loadDistanceVoxels(const std::string& filepath);
 
+    void readBinvox(const std::string& filepath);
+
     void saveP(const std::string& filepath);
     void loadP(const std::string& filepath);
 

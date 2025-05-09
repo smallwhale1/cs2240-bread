@@ -25,10 +25,10 @@ int Bread::toIndex(int x, int y, int z, int dimX, int dimY) {
     return x + y * dimX + z * dimX * dimY;
 }
 
-void Bread::init() {
+void Bread::readBinvox(const std::string& filepath) {
     // specify voxel filepath
 
-    const std::string& filepath = "meshes-binvox/bun-128.binvox";
+    // const std::string& filepath = "meshes-binvox/bun-128.binvox";
     // const std::string& filepath = "frames-48/128-rise-47.binvox";
     // const std::string& filepath = "256-original.binvox";
 
@@ -83,123 +83,207 @@ void Bread::init() {
 
 
     file.close();
+}
+
+void Bread::init() {
+    // specify voxel filepath
+    const std::string& filepath = "128-60-2/128-original.binvox";
+    readBinvox(filepath);
+
+    // const std::string& filepath = "meshes-binvox/bun-128.binvox";
+    // // const std::string& filepath = "frames-48/128-rise-47.binvox";
+    // // const std::string& filepath = "256-original.binvox";
+
+    // std::ifstream file(filepath, std::ios::binary);
+    // if (!file) {
+    //     throw std::runtime_error("Failed to open file");
+    // }
+
+    // // load in voxel into bool vector
+
+    // std::string line;
+    // std::getline(file, line);
+    // if (line != "#binvox 1") {
+    //     throw std::runtime_error("Invalid header");
+    // }
+
+    // while (std::getline(file, line)) {
+    //     if (line.substr(0, 3) == "dim") {
+    //         sscanf(line.c_str(), "dim %d %d %d", &dimX, &dimY, &dimZ);
+    //     } else if (line.substr(0, 10) == "translate ") {
+    //         // handle translate
+    //         sscanf(line.c_str(), "translate %f %f %f", &translateX, &translateY, &translateZ);
+    //     } else if (line.substr(0, 6) == "scale ") {
+    //         // handle scale
+    //         sscanf(line.c_str(), "scale %f", &scale);
+    //     } else if (line == "data") {
+    //         // end of header
+    //         break;
+    //     }
+    // }
+
+    // // data
+    // // # voxels
+    // int numVoxels = dimX * dimY * dimZ;
+
+    // m_voxels.resize(numVoxels);
+    // // std::vector<bool> voxels(numVoxels);
+
+    // // parse data
+    // unsigned char value = 0;
+    // unsigned char count = 0;
+    // int index = 0;
+
+    // while (file.read(reinterpret_cast<char*>(&value), 1) &&
+    //        file.read(reinterpret_cast<char*>(&count), 1)) {
+
+    //     for (int i = 0; i < count; ++i) {
+    //         m_voxels[index++] = (value != 0);
+    //     }
+    //     auto x = 1;
+    // }
+
+
+    // file.close();
 
     // NAIVE
     // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
-    // // MARCHING
-    // vector<Eigen::Vector3f> vertices;
-    // // vector<Eigen::Vector3f> normals;
-    // vector<Triangle> triangles;
+    // for (int i = 0; i < bakingIterations; ++i) {
+    //     std::string inputFile = "128-60-2/128-rise-" + std::to_string(i) + ".binvox";
+    //     std::string outputFile = "frames/" + std::to_string(i) + ".obj";
 
-    // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
+    //     try {
+    //         readBinvox(inputFile);
+    //     } catch (const std::exception& e) {
+    //         std::cerr << "failed to read " << inputFile << ": " << e.what() << std::endl;
+    //         continue;
+    //     }
 
-    // saveOBJ("256.obj", vertices, triangles);
+    //     std::vector<Eigen::Vector3f> vertices;
+    //     std::vector<Triangle> triangles;
 
-    // BREAD LOGIC
+    //     marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
+    //     saveOBJ(outputFile, vertices, triangles);
 
-    // PADDING
-    // add padding around the edges to allow for rising
-    addPadding(10);
-
-    m_P.resize(m_voxels.size());
-    std::fill(m_P.begin(), m_P.end(), 1.0);
-
-    fillIn();
-
-    // const std::string distFile = "distance-128.bin";
-
-    // try {
-    //     loadDistanceVoxels(distFile);
-    // } catch (...) {
-    //     std::cout << "calc distance" << std::endl;
-    //     distanceVoxels();
-    //     saveDistanceVoxels(distFile);
+    //     std::cout << "Saved frame " << i << " to " << outputFile << std::endl;
     // }
 
-    distanceVoxels();
-    generateSphere(0, 0, 0, 2);
-    generateBubbles(1, 11);
+    // std::cout << "All frames exported." << std::endl;
 
-    const std::string pFile = "P-128.bin";
-    saveP(pFile);
+    // MARCHING
+    vector<Eigen::Vector3f> vertices;
+    // vector<Eigen::Vector3f> normals;
+    vector<Triangle> triangles;
 
-    std::vector<bool> voxelCopy = m_voxels;
-    // do cross section
-    for (int i = 0; i < m_voxels.size(); i++) {
-        int x, y, z;
-        voxelToIndices(i, x, y, z);
-        if (z < dimZ / 2) {
-            voxelCopy[i] = 0;
-        }
-    }
+    marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
 
-    writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
+    saveOBJ("frames/128-original.obj", vertices, triangles);
 
-    initTemperatures();
-    initBake();
-    generateGaussianFilter();
+    // // BREAD LOGIC
 
-    m_3d_temperatures.resize(m_voxels.size());
+    // // PADDING
+    // // add padding around the edges to allow for rising
+    // addPadding(10);
 
-    for (int i = 0; i < bakingIterations; i++) {
-        bake();
-        fillTemps();
+    // m_P.resize(m_voxels.size());
+    // std::fill(m_P.begin(), m_P.end(), 1.0);
 
-        // write out
+    // fillIn();
 
-        m_gradVector = calcGradient(m_3d_temperatures);
-        // convolveGaussian();
-        std::vector<bool> warped = warpBubbles(m_gradVector);
-        std::vector<bool> risen = rise(m_gradVector, warped,
-                                       (i + 1) * (S_change / bakingIterations),
-                                       (i + 1) * (S_change_y / bakingIterations));
+    // // const std::string distFile = "distance-128.bin";
 
-        for (int j = 0; j < m_voxels.size(); j++) {
-            int x, y, z;
-            voxelToIndices(j, x, y, z);
-            if (z < dimZ / 2) {
-                risen[j] = 0;
-            }
-        }
+    // // try {
+    // //     loadDistanceVoxels(distFile);
+    // // } catch (...) {
+    // //     std::cout << "calc distance" << std::endl;
+    // //     distanceVoxels();
+    // //     saveDistanceVoxels(distFile);
+    // // }
 
-        std::string filename = "128-rise-" + std::to_string(i) + ".binvox";
-        writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+    // distanceVoxels();
+    // generateSphere(0, 0, 0, 2);
+    // generateBubbles(1, 11);
 
-        // for (int j = 0; j < m_3d_temperatures.size(); j++) {
-        //     cout << m_3d_temperatures[j] << endl;
-        // }
-        // temps are nan when in release mode but not in debug
-    }
+    // const std::string pFile = "P-128.bin";
+    // saveP(pFile);
 
-    for (int i = 0; i < m_temperatures.size(); i++) {
-        cout << m_temperatures[i] - 273.15 << endl;
-    }
-
-    heatMap();
-
-    cout << "done!" << endl;
-
-    // constructMockTemp();
-    // m_gradVector = calcGradient(m_3d_temperatures);
-
-    // generateGaussianFilter();
-    // convolveGaussian();
-
-    // std::vector<bool> warped = warpBubbles(m_gradVector);
-    // std::vector<bool> risen = rise(m_gradVector, warped);
-
+    // std::vector<bool> voxelCopy = m_voxels;
+    // // do cross section
     // for (int i = 0; i < m_voxels.size(); i++) {
     //     int x, y, z;
     //     voxelToIndices(i, x, y, z);
     //     if (z < dimZ / 2) {
-    //         risen[i] = 0;
+    //         voxelCopy[i] = 0;
     //     }
     // }
 
-    // writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+    // writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
-    cout << "done!" << endl;
+    // initTemperatures();
+    // initBake();
+    // generateGaussianFilter();
+
+    // m_3d_temperatures.resize(m_voxels.size());
+
+    // for (int i = 0; i < bakingIterations; i++) {
+    //     bake();
+    //     fillTemps();
+
+    //     // write out
+
+    //     m_gradVector = calcGradient(m_3d_temperatures);
+    //     // convolveGaussian();
+    //     std::vector<bool> warped = warpBubbles(m_gradVector);
+    //     std::vector<bool> risen = rise(m_gradVector, warped,
+    //                                    (i + 1) * (S_change / bakingIterations),
+    //                                    (i + 1) * (S_change_y / bakingIterations));
+
+    //     for (int j = 0; j < m_voxels.size(); j++) {
+    //         int x, y, z;
+    //         voxelToIndices(j, x, y, z);
+    //         if (z < dimZ / 2) {
+    //             risen[j] = 0;
+    //         }
+    //     }
+
+    //     std::string filename = "128-rise-" + std::to_string(i) + ".binvox";
+    //     writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+
+    //     // for (int j = 0; j < m_3d_temperatures.size(); j++) {
+    //     //     cout << m_3d_temperatures[j] << endl;
+    //     // }
+    //     // temps are nan when in release mode but not in debug
+    // }
+
+    // for (int i = 0; i < m_temperatures.size(); i++) {
+    //     cout << m_temperatures[i] - 273.15 << endl;
+    // }
+
+    // heatMap();
+
+    // cout << "done!" << endl;
+
+    // // constructMockTemp();
+    // // m_gradVector = calcGradient(m_3d_temperatures);
+
+    // // generateGaussianFilter();
+    // // convolveGaussian();
+
+    // // std::vector<bool> warped = warpBubbles(m_gradVector);
+    // // std::vector<bool> risen = rise(m_gradVector, warped);
+
+    // // for (int i = 0; i < m_voxels.size(); i++) {
+    // //     int x, y, z;
+    // //     voxelToIndices(i, x, y, z);
+    // //     if (z < dimZ / 2) {
+    // //         risen[i] = 0;
+    // //     }
+    // // }
+
+    // // writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+
+    // cout << "done!" << endl;
 }
 
 void Bread::saveP(const std::string& filepath) {
