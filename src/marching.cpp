@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <stdexcept>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 using namespace Eigen;
@@ -97,17 +98,36 @@ void marchingCubes(
 }
 
 void saveOBJ(const string& filename, const vector<Vector3f>& vertices, const vector<Triangle>& triangles) {
+
     ofstream file(filename);
     if (!file.is_open()) {
         throw runtime_error("Failed to open OBJ file for writing!");
     }
 
+    file << "#\n";
+    file << "# object crust\n";
+    file << "#\n";
+    file << "\n";
+
+    //vertices
     for (const auto& v : vertices)
         file << "v " << v.x() << " " << v.y() << " " << v.z() << "\n";
+    file << "# " << vertices.size() << " vertices\n";
+    file << "\n";
+
+    //texture coords
+    for (const auto& v : vertices)
+        file << "v " << v.x() << " " << v.y() << " " << v.z() << "\n";
+    file << "# " << vertices.size() << " texture coords\n";
+    file << "\n";
+
+    file << "g crust\n";
+    file << "usemtl crust\n";
+    file << "s 0\n";
 
     for (const auto& t : triangles)
         file << "f "
              << (t.v0 + 1) << " "
              << (t.v1 + 1) << " "
-             << (t.v2 + 1) << "\n";
+             << (t.v2 + 1) << "\n"; //update these with more info for vts
 }

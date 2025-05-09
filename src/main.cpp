@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include "bread.h"
+#include "marching.h"
 
 #include <QApplication>
 #include <QSurfaceFormat>
