@@ -377,8 +377,20 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
                     continue;
 
                 // deformedVoxels[originalInd] = inputVec[newIndex];
-                float sample = trilinearSampleVoxel(xyzX, xyzY, xyzZ, inputVec);
-                deformedVoxels[originalInd] = sample > 0.5f;
+                // float sample = trilinearSampleVoxel(xyzX, xyzY, xyzZ, inputVec);
+                // deformedVoxels[originalInd] = sample > 0.5f;
+                // deformedVoxels[originalInd] = m_voxels[newIndex];
+                deformedVoxels[originalInd] = m_voxels[newIndex];
+                // if (deformedVoxels[originalInd] == 1) {
+                //     for (int yy = dimY; yy > xyzY; yy--) {
+                //         int yyInd;
+                //         int yyIndLess;
+                //         indicesToVoxel(xyzX, yy, xyzZ, yyInd);
+                //         indicesToVoxel(xyzX, yy - 1, xyzZ, yyIndLess);
+                //         deformedVoxels[yyInd] = deformedVoxels[yyIndLess];
+                //     }
+                // }
+
             }
         }
     }
