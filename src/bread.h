@@ -13,6 +13,7 @@ public:
     void init();
 
 private:
+    int m_frame = 0;
     std::vector<bool> m_voxels;
     int dimX, dimY, dimZ;
     float translateX = 0.f;
@@ -375,7 +376,7 @@ private:
     std::vector<double> m_W;
     std::vector<double> m_p;
     double timestep = 30.0; // maybe should be like 30??
-    int bakingIterations = 60;
+    int bakingIterations = 39;
     void initTemperatures();
     void bake();
     void initBake();
