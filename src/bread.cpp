@@ -28,7 +28,7 @@ void Bread::init() {
     // specify voxel filepath
 
     // absolute right now
-    const std::string& filepath = "meshes-binvox/bread_128.binvox";
+    const std::string& filepath = "meshes-binvox/bread_256.binvox";
 
     std::ifstream file(filepath, std::ios::binary);
     if (!file) {
@@ -189,57 +189,127 @@ void Bread::init() {
 
     writeBinvox("test-128-rise.binvox", dimX, dimY, dimZ, m_voxels, translateX, translateY, translateZ, scale);
 
+    saveJPG();
+
     cout << "done!" << endl;
 }
 
-void Bread::distanceVoxels() {
-    m_distance_voxels.resize(m_voxels.size());
 
-    #pragma omp parallel for
-    for (int i = 0; i < m_voxels.size(); i++) {
-        if (!m_voxels[i]) {
-            m_distance_voxels[i] = 0.f;
-        } else {
-            int x, y, z;
-            voxelToIndices(i, x, y, z);
-            if (x == 0 || y == 0 || z == 0 || x == dimX - 1 || y == dimY - 1 || z == dimZ - 1) {
-                m_distance_voxels[i] = 1.f;
-            } else {
-                float minDistance = dimX * dimY * dimZ;
-                for (int j = 0; j < m_voxels.size(); j++) {
-                    if (i != j && !m_voxels[j]) {
-                        int x_prime, y_prime, z_prime;
-                        voxelToIndices(j, x_prime, y_prime, z_prime);
-                        float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
-                        if (currDistance < minDistance) {
-                            minDistance = currDistance;
+// void Bread::distanceVoxels() {
+//     m_distance_voxels.resize(m_voxels.size());
+
+//     #pragma omp parallel for
+//     for (int i = 0; i < m_voxels.size(); i++) {
+//         if (!m_voxels[i]) {
+//             m_distance_voxels[i] = 0.f;
+//         } else {
+//             int x, y, z;
+//             voxelToIndices(i, x, y, z);
+//             if (x == 0 || y == 0 || z == 0 || x == dimX - 1 || y == dimY - 1 || z == dimZ - 1) {
+//                 m_distance_voxels[i] = 1.f;
+//             } else {
+//                 float minDistance = dimX * dimY * dimZ;
+//                 for (int j = 0; j < m_voxels.size(); j++) {
+//                     if (i != j && !m_voxels[j]) {
+//                         int x_prime, y_prime, z_prime;
+//                         voxelToIndices(j, x_prime, y_prime, z_prime);
+//                         float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
+//                         if (currDistance < minDistance) {
+//                             minDistance = currDistance;
+//                         }
+//                     }
+//                 }
+//                 if (x + 1 < minDistance) {
+//                     minDistance = x + 1;
+//                 }
+//                 if (y + 1 < minDistance) {
+//                     minDistance = y + 1;
+//                 }
+//                 if (y + 1 < minDistance) {
+//                     minDistance = z + 1;
+//                 }
+//                 if (dimX - x < minDistance) {
+//                     minDistance = dimX - x;
+//                 }
+//                 if (dimY - y < minDistance) {
+//                     minDistance = dimY - y;
+//                 }
+//                 if (dimZ - z < minDistance) {
+//                     minDistance = dimZ - z;
+//                 }
+//                 m_distance_voxels[i] = minDistance;
+//             }
+
+//         }
+//     }
+// }
+
+
+void Bread::distanceVoxels() {
+    m_distance_voxels.resize(m_voxels.size(), std::numeric_limits<float>::max());
+
+    std::queue<std::tuple<int, int, int>> q;
+
+    for (int x = 0; x < dimX; ++x) {
+        for (int y = 0; y < dimY; ++y) {
+            for (int z = 0; z < dimZ; ++z) {
+                int idx;
+                indicesToVoxel(x, y, z, idx);
+                if (!m_voxels[idx]) {
+                    m_distance_voxels[idx] = 0.f;
+                    continue;
+                }
+
+                bool isSurface = false;
+                for (int dx = -1; dx <= 1 && !isSurface; ++dx) {
+                    for (int dy = -1; dy <= 1 && !isSurface; ++dy) {
+                        for (int dz = -1; dz <= 1 && !isSurface; ++dz) {
+                            if (dx == 0 && dy == 0 && dz == 0) continue;
+                            int nx = x + dx;
+                            int ny = y + dy;
+                            int nz = z + dz;
+                            if (nx < 0 || ny < 0 || nz < 0 || nx >= dimX || ny >= dimY || nz >= dimZ)
+                                continue;
+                            int nIdx;
+                            indicesToVoxel(nx, ny, nz, nIdx);
+                            if (!m_voxels[nIdx]) {
+                                isSurface = true;
+                                m_distance_voxels[idx] = 1.f;
+                                q.emplace(x, y, z);
+                            }
                         }
                     }
                 }
-                if (x + 1 < minDistance) {
-                    minDistance = x + 1;
-                }
-                if (y + 1 < minDistance) {
-                    minDistance = y + 1;
-                }
-                if (y + 1 < minDistance) {
-                    minDistance = z + 1;
-                }
-                if (dimX - x < minDistance) {
-                    minDistance = dimX - x;
-                }
-                if (dimY - y < minDistance) {
-                    minDistance = dimY - y;
-                }
-                if (dimZ - z < minDistance) {
-                    minDistance = dimZ - z;
-                }
-                m_distance_voxels[i] = minDistance;
             }
+        }
+    }
+    const int dx[6] = {1, -1, 0, 0, 0, 0};
+    const int dy[6] = {0, 0, 1, -1, 0, 0};
+    const int dz[6] = {0, 0, 0, 0, 1, -1};
 
+    while (!q.empty()) {
+        auto [x, y, z] = q.front();
+        q.pop();
+        int currIdx;
+        indicesToVoxel(x, y, z, currIdx);
+        float currDist = m_distance_voxels[currIdx];
+
+        for (int i = 0; i < 6; ++i) {
+            int nx = x + dx[i];
+            int ny = y + dy[i];
+            int nz = z + dz[i];
+            if (nx < 0 || ny < 0 || nz < 0 || nx >= dimX || ny >= dimY || nz >= dimZ)
+                continue;
+            int nIdx;
+            indicesToVoxel(nx, ny, nz, nIdx);
+            if (m_voxels[nIdx] && m_distance_voxels[nIdx] > currDist + 1) {
+                m_distance_voxels[nIdx] = currDist + 1;
+                q.emplace(nx, ny, nz);
+            }
         }
     }
 }
+
 
 void Bread::addPadding(int paddingAmt) {
     int newDimX = dimX + paddingAmt * 2;
@@ -275,6 +345,7 @@ void Bread::addPadding(int paddingAmt) {
     dimY = newDimY;
     dimZ = newDimZ;
 }
+
 
 void Bread::voxelToIndices(int index, int &x, int &y, int &z) {
     // x = index % (dimX * dimZ);
@@ -549,7 +620,7 @@ void Bread::initBake() {
     m_p.assign(m_temperatures.size(), 285.0);
 
     // fill m_L
-    m_L.assign(m_distance_voxels.size(), 90.f);
+    m_L.assign(m_distance_voxels.size(), 70.f);
 
 }
 
@@ -622,38 +693,48 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
     rgb_colors.clear();
         //channel 2 is positoin a between red and green (-120-+120);
         //chnanel 3 is position b between yellow and blue (-120-+120)
+    bool addToCrust = true;
 
-    std::cout << "adding crust" << std::endl;
+    // std::cout << "adding crust" << std::endl;
     for(int i = 0; i < m_distance_voxels.size(); i++){
 
-        std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
+        // std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
 
         //voxel that is within crust distance, has a temp > 120C/393.15K, and has water activity < 0.6 //increasing temperature decreases water activity
-        if(m_distance_voxels[i] < crust_thickness && m_distance_voxels[i] != 0 && m_temperatures[std::floor((m_distance_voxels[i]))] > 390.f && dWdt[i] < 0.6f){
+        if(m_distance_voxels[i] < crust_thickness && m_distance_voxels[i] != 0 && m_temperatures[std::floor((m_distance_voxels[i]))] > 350.f && m_W[std::floor((m_distance_voxels[i]))] < 0.6f){
 
-            //how long have we been updating the crust color, hopefuly goes for about 20 iterations
-            if(i == 0){
-                crust_time++;
+            // cout << m_distance_voxels[i] << endl;
+            if (addToCrust) {
+                crust_time ++;
+                addToCrust = false;
             }
+            //how long have we been updating the crust color, hopefuly goes for about 20 iterations
 
-            float temp1 = std::pow(7.923310f, 6.f) + (std::pow(2.739710f, 6.f) / dWdt[i]);//water_acticity ranges from 0.1 to 0.6
-            float temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / dWdt[i])) / m_temperatures[i]); //temp at this voxel at this time
-            float k = std::pow(temp1, temp2);
-            m_L[i] += -k * m_L[i] * timestep; //decrements
+            double t1 = std::pow(7.923310f, 6.f);
+            float water_activity = m_W[m_distance_voxels[i]];
+            double t2 = (std::pow(2.739710f, 6.f) / water_activity);
+            double temp1 = t1 + t2; //water_acticity ranges from 0.1 to 0.6
+            double temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / water_activity)) / (m_temperatures[0])); //temp at this voxel at this time
+            double k = temp1 * std::pow(M_E, temp2);
+            k -= 34000;
+            k /= 15000;
+            m_L[i] += -k * m_L[i] * timestep / 60.f; //decrements
 
-            float a = -4.5f + (.125 * crust_time * timestep);
-            float b = 22.6 + (1.f * crust_time * timestep);
+            float a = -4.5f + (.75 * crust_time);
+            float b = 22.6 + (2.9f * crust_time);
 
+            // std::cout << k << std::endl;
+            // std::cout << m_distance_voxels[i]<< " " << m_L[i] << " " << a << " " << b << std::endl;
             std::vector<float> temp = labToRgb({m_L[i], a, b});
             rgb_colors.push_back({(float)m_distance_voxels[i], temp[0], temp[1], temp[2]});
         }
 
     }
 
-    std::cout << "color size: " << rgb_colors.size() << std::endl;
-    for(int i = 0; i < rgb_colors.size(); i++){
-        std::cout << "L: " << rgb_colors[i][0] << ", a: " << rgb_colors[i][1] << ", b: " << rgb_colors[i][2] << std::endl;
-    }
+    // std::cout << "color size: " << rgb_colors.size() << std::endl;
+    // for(int i = 0; i < rgb_colors.size(); i++){
+        // std::cout << "L: " << rgb_colors[i][0] << ", a: " << rgb_colors[i][1] << ", b: " << rgb_colors[i][2] << std::endl;
+    // }
 
 
 }
@@ -740,9 +821,11 @@ void Bread::saveJPG(){
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
 
-            image.at<cv::Vec3b>(y, x)[2] = rgb_values[y][0]; //red
-            image.at<cv::Vec3b>(y, x)[1] = rgb_values[y][1]; //green
-            image.at<cv::Vec3b>(y, x)[0] = rgb_values[y][2]; //blue
+            image.at<cv::Vec3b>(y, x)[2] = rgb_values[y][0] * 255; //red
+            image.at<cv::Vec3b>(y, x)[1] = rgb_values[y][1] * 255; //green
+            image.at<cv::Vec3b>(y, x)[0] = rgb_values[y][2] * 255; //blue
+
+            cout << rgb_values[y][0] << " " << rgb_values[y][1] << " " << rgb_values[y][2] << endl;
 
         }
     }
