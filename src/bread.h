@@ -4,6 +4,10 @@
 
 #include <vector>
 
+struct Triangle {
+    int v0, v1, v2;
+};
+
 class Bread {
 private:
 
@@ -65,6 +69,23 @@ private:
 
     void saveMTL();
     void saveJPG();
+    std::vector<Eigen::Vector3f> outVertices;
+    double crust_thickness;
+
+    void marchingCubes(
+        const std::vector<bool>& voxels,
+        int dimX, int dimY, int dimZ,
+        std::vector<Eigen::Vector3f>& outVertices,
+        std::vector<Triangle>& outTriangles,
+        const int edgeTable[256],
+        const int triTable[256][16]
+        );
+
+    void saveOBJ(
+        const std::string& filename,
+        const std::vector<Eigen::Vector3f>& vertices,
+        const std::vector<Triangle>& triangles
+        );
 
     const int edgeTable[256] =
         {

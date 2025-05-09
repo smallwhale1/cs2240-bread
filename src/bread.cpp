@@ -106,11 +106,10 @@ void Bread::init() {
     // NAIVE
     // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
 
-    // vector<Eigen::Vector3f> vertices;
     // // vector<Eigen::Vector3f> normals;
     // vector<Triangle> triangles;
 
-    // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
+    // marchingCubes(m_voxels, dimX, dimY, dimZ, outVertices, triangles, edgeTable, triangleTable);
 
     // saveOBJ("bread_mesh_128.obj", vertices, triangles);
 
@@ -685,7 +684,7 @@ void Bread::heatMap() {
 void Bread::createCrust(int time, std::vector<double> dWdt){
 
     //has to change based on time step, relationship between num voxels of mesh and time step for thickness, certain percentage of crust based on timestep
-    double crust_thickness = dimX * time * (0.03125 / bakingIterations); //not sure which dim this should be or if it should be an average / different for all dims
+    crust_thickness = dimX * time * (0.03125 / bakingIterations); //not sure which dim this should be or if it should be an average / different for all dims
     //ok so this is based on me estimating one of the images that shows the crust thickness is 3.125% of the number of voxels when fully baked
 
     // a* [4.5e1.5] and b* [22.6e45.9]
@@ -777,8 +776,6 @@ std::vector<float> Bread::labToRgb(std::vector<float> color){
 
 }
 
-
-
 void Bread::saveMTL(){
 
     ofstream mtlFile("material.mtl"); // Creates or overwrites "material.mtl"
@@ -807,7 +804,7 @@ void Bread::saveJPG(){
         rgb_dict[rgb_colors[i][0]] = {rgb_colors[i][1], rgb_colors[i][2], rgb_colors[i][3]};
     }
 
-    int width = rgb_dict.size();
+    int width = 1;
     int height = rgb_dict.size();
     std::vector<std::vector<double>> rgb_values;
 
@@ -825,8 +822,6 @@ void Bread::saveJPG(){
             image.at<cv::Vec3b>(y, x)[1] = rgb_values[y][1] * 255; //green
             image.at<cv::Vec3b>(y, x)[0] = rgb_values[y][2] * 255; //blue
 
-            cout << rgb_values[y][0] << " " << rgb_values[y][1] << " " << rgb_values[y][2] << endl;
-
         }
     }
 
@@ -835,4 +830,187 @@ void Bread::saveJPG(){
         throw runtime_error("Could not save image\n");
     }
 }
+
+using namespace std;
+using namespace Eigen;
+
+// Helper: safe voxel lookup
+inline bool getVoxel(const vector<bool>& voxels, int x, int y, int z, int dimX, int dimY, int dimZ) {
+    if (x < 0 || y < 0 || z < 0 || x >= dimX || y >= dimY || z >= dimZ) return false;
+    return voxels[x + dimX * (y + dimY * z)];
+}
+
+// Helper: midpoint interpolation
+Vector3f interpolate(const Vector3f& p1, const Vector3f& p2) {
+    return 0.5f * (p1 + p2);
+}
+
+// Hashing for Vector3f
+struct Vector3fHash {
+    size_t operator()(const Vector3f& v) const {
+        size_t h1 = hash<float>()(v.x());
+        size_t h2 = hash<float>()(v.y());
+        size_t h3 = hash<float>()(v.z());
+        return h1 ^ (h2 << 1) ^ (h3 << 2);
+    }
+};
+
+struct Vector3fEqual {
+    bool operator()(const Vector3f& a, const Vector3f& b) const {
+        return a.isApprox(b, 1e-5f); // Allow small floating point tolerance
+    }
+};
+
+void Bread::marchingCubes(
+    const vector<bool>& voxels,
+    int dimX, int dimY, int dimZ,
+    vector<Vector3f>& outVertices,
+    vector<Triangle>& outTriangles,
+    const int edgeTable[256],
+    const int triTable[256][16]
+    ) {
+    const Vector3f vertexOffset[8] = {
+        {0,0,0}, {1,0,0}, {1,1,0}, {0,1,0},
+        {0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}
+    };
+
+    const int edgeVertex[12][2] = {
+        {0,1}, {1,2}, {2,3}, {3,0},
+        {4,5}, {5,6}, {6,7}, {7,4},
+        {0,4}, {1,5}, {2,6}, {3,7}
+    };
+
+    unordered_map<Vector3f, int, Vector3fHash, Vector3fEqual> vertexMap;
+
+    for (int z = 0; z < dimZ - 1; ++z) {
+        for (int y = 0; y < dimY - 1; ++y) {
+            for (int x = 0; x < dimX - 1; ++x) {
+                int cubeIndex = 0;
+                bool cube[8];
+                for (int i = 0; i < 8; ++i) {
+                    cube[i] = getVoxel(voxels, x + vertexOffset[i].x(), y + vertexOffset[i].y(), z + vertexOffset[i].z(), dimX, dimY, dimZ);
+                    if (cube[i]) cubeIndex |= (1 << i);
+                }
+
+                if (edgeTable[cubeIndex] == 0)
+                    continue;
+
+                Vector3f vertList[12];
+                for (int i = 0; i < 12; ++i) {
+                    if (edgeTable[cubeIndex] & (1 << i)) {
+                        Vector3f p1 = Vector3f(x, y, z) + vertexOffset[edgeVertex[i][0]];
+                        Vector3f p2 = Vector3f(x, y, z) + vertexOffset[edgeVertex[i][1]];
+                        vertList[i] = interpolate(p1, p2);
+                    }
+                }
+
+                for (int i = 0; triTable[cubeIndex][i] != -1; i += 3) {
+                    int idx[3];
+                    for (int j = 0; j < 3; ++j) {
+                        const Vector3f& v = vertList[triTable[cubeIndex][i+j]];
+                        auto it = vertexMap.find(v);
+                        if (it != vertexMap.end()) {
+                            idx[j] = it->second;
+                        } else {
+                            idx[j] = outVertices.size();
+                            outVertices.push_back(v);
+                            vertexMap[v] = idx[j];
+                        }
+                    }
+                    outTriangles.push_back({ idx[0], idx[1], idx[2] });
+                }
+            }
+        }
+    }
+}
+
+void Bread::saveOBJ(const string& filename, const vector<Vector3f>& vertices, const vector<Triangle>& triangles) {
+
+    ofstream file(filename);
+    if (!file.is_open()) {
+        throw runtime_error("Failed to open OBJ file for writing!");
+    }
+
+    file << "#\n";
+    file << "# object crust\n";
+    file << "#\n";
+    file << "\n";
+
+    //vertices
+    for (const auto& v : vertices){
+        file << "v " << v.x() << " " << v.y() << " " << v.z() << "\n";
+    }
+    file << "# " << vertices.size() << " vertices\n";
+    file << "\n";
+
+    //texture coords
+    std::map<double, std::vector<double>> rgb_dict;
+    for(int i = 0; i < rgb_colors.size(); i++){
+        rgb_dict[rgb_colors[i][0]] = {rgb_colors[i][1], rgb_colors[i][2], rgb_colors[i][3]};
+    }
+    int num_coords = rgb_dict.size();
+
+    for(int i = 0; i < num_coords; i++){
+        file << "vt 0.000 " << (float)num_coords << " 0.000\n";
+    }
+    file << "# " << num_coords << " texture coords\n";
+    file << "\n";
+
+    file << "g crust\n";
+    file << "usemtl crust\n";
+    file << "s 0\n";
+
+    std::vector<Vector3f> voxel_locs;
+    for (int i = 0; i < m_voxels.size(); i++){
+        int x, y, z;
+        if(m_distance_voxels[i] <= crust_thickness){
+            voxelToIndices(m_voxels[i], x, y, z);
+            voxel_locs.push_back(Vector3f(x, y, z));
+        }
+    }
+
+    std::map<int, int> vertex_to_voxel;
+    for(int i = 0; i < outVertices.size(); i++){
+
+        Vector3f closest = Vector3f(INFINITY, INFINITY, INFINITY);
+        int num_closest = INFINITY;
+        for(int j = 0; j < voxel_locs.size(); j++){
+
+            double x_diff = abs(outVertices[i].x() - voxel_locs[j].x());
+            double y_diff = abs(outVertices[i].y() - voxel_locs[j].y());
+            double z_diff = abs(outVertices[i].z() - voxel_locs[j].z());
+
+            double x_sim = abs(closest.x() - voxel_locs[j].x());
+            double y_sim = abs(closest.y() - voxel_locs[j].y());
+            double z_sim = abs(closest.z() - voxel_locs[j].z());
+
+            if(x_diff < x_sim && y_diff < y_sim && z_diff < z_sim){
+                closest = outVertices[i];
+                num_closest = j;
+            }
+        }
+
+        vertex_to_voxel[i] = num_closest;
+    }
+
+    for (const auto& t : triangles){
+
+        int curr_voxel_0 = vertex_to_voxel[t.v0];
+        int curr_voxel_1 = vertex_to_voxel[t.v1];
+        int curr_voxel_2 = vertex_to_voxel[t.v2];
+
+        int coord0 = floor(m_distance_voxels[curr_voxel_0]) / num_coords;
+        coord0 = floor(coord0);
+        int coord1 = floor(m_distance_voxels[curr_voxel_1]) / num_coords;
+        coord1 = floor(coord1);
+        int coord2 = floor(m_distance_voxels[curr_voxel_2]) / num_coords;
+        coord2 = floor(coord2);
+
+        file << "f "
+             << (t.v0 + 1) << "/" << coord0 << " "
+             << (t.v1 + 1) << "/" << coord1 << " "
+             << (t.v2 + 1) << "/" << coord2 << " " << "\n";
+    }
+}
+
 
