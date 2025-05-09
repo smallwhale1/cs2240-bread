@@ -3,6 +3,7 @@
 #include "Eigen/Dense"
 
 #include <vector>
+#include <queue>
 
 class Bread {
 private:
@@ -12,6 +13,7 @@ public:
     void init();
 
 private:
+    int m_frame = 0;
     std::vector<bool> m_voxels;
     int dimX, dimY, dimZ;
     float translateX = 0.f;
@@ -29,22 +31,39 @@ private:
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
 
+    void saveDistanceVoxels(const std::string& filepath);
+    void loadDistanceVoxels(const std::string& filepath);
+
+    void saveP(const std::string& filepath);
+    void loadP(const std::string& filepath);
+
     // parameters
     // temperature deformation
     float p = 3.0;
     // rising
-    float S = 1.01;
+    float S = 1.1;
+    float S_y = 1.2;
+    float S_change = S - 1.f;
+    float S_change_y = S_y - 1.f;
+
+    int m_crust_thickness = 3;
 
     // deformation
-    void warpBubbles(std::vector<Eigen::Vector3f> grad);
-    void rise(std::vector<Eigen::Vector3f> grad);
+    std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);
+    std::vector<bool> rise(std::vector<Eigen::Vector3f> grad, std::vector<bool> inputVec, float scaleAmt, float scaleAmtY);
     void constructMockTemp();
     void constructTemp();
     std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
     void convolveGaussian();
     void generateGaussianFilter();
+    float trilinearSampleVoxel(float x, float y, float z, std::vector<bool>& inputVec);
+    void spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z);
     std::vector<float> m_mock_temp;
     std::vector<float> m_temp;
+
+    void fillTemps();
+
+    std::vector<float> m_3d_temperatures;
 
     int m_filterRadius = 1; // change radius of filter
     std::vector<float> m_gaussianKernel;
