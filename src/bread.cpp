@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "marching.h"
-// #include <omp.h>
+#include <omp.h>
 #include <algorithm>
 
 #include <QString>
@@ -26,8 +26,8 @@ int Bread::toIndex(int x, int y, int z, int dimX, int dimY) {
 }
 
 void Bread::init() {
-    // specify voxel filepath
 
+    // Specify voxel filepath:
     const std::string& filepath = "meshes-binvox/bun-128.binvox";
     // const std::string& filepath = "frames-48/128-rise-47.binvox";
     // const std::string& filepath = "256-original.binvox";
@@ -37,8 +37,7 @@ void Bread::init() {
         throw std::runtime_error("Failed to open file");
     }
 
-    // load in voxel into bool vector
-
+    // Load in voxel into bool vector:
     std::string line;
     std::getline(file, line);
     if (line != "#binvox 1") {
@@ -49,25 +48,21 @@ void Bread::init() {
         if (line.substr(0, 3) == "dim") {
             sscanf(line.c_str(), "dim %d %d %d", &dimX, &dimY, &dimZ);
         } else if (line.substr(0, 10) == "translate ") {
-            // handle translate
+            // Handle translate:
             sscanf(line.c_str(), "translate %f %f %f", &translateX, &translateY, &translateZ);
         } else if (line.substr(0, 6) == "scale ") {
-            // handle scale
+            // Handle scale:
             sscanf(line.c_str(), "scale %f", &scale);
         } else if (line == "data") {
-            // end of header
+            // End of header:
             break;
         }
     }
 
-    // data
-    // # voxels
     int numVoxels = dimX * dimY * dimZ;
-
     m_voxels.resize(numVoxels);
-    // std::vector<bool> voxels(numVoxels);
 
-    // parse data
+    // Parse data:
     unsigned char value = 0;
     unsigned char count = 0;
     int index = 0;
@@ -80,72 +75,27 @@ void Bread::init() {
         }
         auto x = 1;
     }
-
-
     file.close();
 
-    // NAIVE
-    // extractVoxelSurfaceToOBJ(m_voxels, dimX, dimY, dimZ, "bread-output.obj");
-
-    // // MARCHING
-    // vector<Eigen::Vector3f> vertices;
-    // // vector<Eigen::Vector3f> normals;
-    // vector<Triangle> triangles;
-
-    // marchingCubes(m_voxels, dimX, dimY, dimZ, vertices, triangles, edgeTable, triangleTable);
-
-    // saveOBJ("256.obj", vertices, triangles);
-
-    // BREAD LOGIC
-
-    // PADDING
-    // add padding around the edges to allow for rising
+    // Add padding around the edges to allow for rising:
     addPadding(10);
 
     m_P.resize(m_voxels.size());
     std::fill(m_P.begin(), m_P.end(), 1.0);
 
     fillIn();
-
-    // const std::string distFile = "distance-128.bin";
-
-    // try {
-    //     loadDistanceVoxels(distFile);
-    // } catch (...) {
-    //     std::cout << "calc distance" << std::endl;
-    //     distanceVoxels();
-    //     saveDistanceVoxels(distFile);
-    // }
-
-
-    // generateSphere(0, 0, 0, 2);
-    // generateBubbles(1, 5); // sourdough
-    // generateBubbles(0, 2); // sandwich
-
     distanceVoxels();
-    // std::vector<bool> voxelCopy = m_voxels;
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     if (z > dimZ / 8) {
-    //         voxelCopy[i] = 0;
-    //     }
-    // }
 
-    // m_frame++;
-    // writeBinvox("128-original-" + std::to_string(m_frame) + ".binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
-    // generateSphere(0, 0, 0, 2);
-    // generateBubbles(1, 8);
-    // generateSphere(0, 0, 0, 2);
+    generateSphere(0, 0, 0, 2);
+    generateBubbles(1, 8);
     // generateBubbles(1, 5); // sourdough
     // generateBubbles(0, 2); // sandwich
-    generateBubbles(1, 8);
 
     const std::string pFile = "P-128.bin";
     saveP(pFile);
 
+    // For cross sections:
     // voxelCopy = m_voxels;
-    // do cross section
     // for (int i = 0; i < m_voxels.size(); i++) {
     //     int x, y, z;
     //     voxelToIndices(i, x, y, z);
@@ -153,7 +103,6 @@ void Bread::init() {
     //         voxelCopy[i] = 0;
     //     }
     // }
-
     // writeBinvox("128-original.binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
     initTemperatures();
@@ -166,10 +115,7 @@ void Bread::init() {
         bake(i);
         fillTemps();
 
-        // write out
-
         m_gradVector = calcGradient(m_3d_temperatures);
-        // convolveGaussian();
         std::vector<bool> warped = warpBubbles(m_gradVector);
         std::vector<bool> risen = rise(m_gradVector, warped,
                                        (i + 1) * (S_change / bakingIterations),
@@ -186,40 +132,10 @@ void Bread::init() {
 
         std::string filename = "128-rise-" + std::to_string(m_frame) + ".binvox";
         writeBinvox(filename, dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
-
-        // for (int j = 0; j < m_3d_temperatures.size(); j++) {
-        //     cout << m_3d_temperatures[j] << endl;
-        // }
-        // temps are nan when in release mode but not in debug
     }
 
-
-    for (int i = 0; i < m_temperatures.size(); i++) {
-        cout << m_temperatures[i] - 273.15 << endl;
-    }
-
-    heatMap();
-
-    cout << "done!" << endl;
-
-    // constructMockTemp();
-    // m_gradVector = calcGradient(m_3d_temperatures);
-
-    // generateGaussianFilter();
-    // convolveGaussian();
-
-    // std::vector<bool> warped = warpBubbles(m_gradVector);
-    // std::vector<bool> risen = rise(m_gradVector, warped);
-
-    // for (int i = 0; i < m_voxels.size(); i++) {
-    //     int x, y, z;
-    //     voxelToIndices(i, x, y, z);
-    //     if (z < dimZ / 2) {
-    //         risen[i] = 0;
-    //     }
-    // }
-
-    // writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
+    // To show heat map:
+    // heatMxap();
 }
 
 void Bread::saveP(const std::string& filepath) {
@@ -271,55 +187,6 @@ void Bread::loadDistanceVoxels(const std::string& filepath) {
     in.read(reinterpret_cast<char*>(m_distance_voxels.data()), size * sizeof(float));
     in.close();
 }
-
-// void Bread::distanceVoxels() {
-//     m_distance_voxels.resize(m_voxels.size());
-
-//     #pragma omp parallel for
-//     for (int i = 0; i < m_voxels.size(); i++) {
-//         if (!m_voxels[i]) {
-//             m_distance_voxels[i] = 0.f;
-//         } else {
-//             int x, y, z;
-//             voxelToIndices(i, x, y, z);
-//             if (x == 0 || y == 0 || z == 0 || x == dimX - 1 || y == dimY - 1 || z == dimZ - 1) {
-//                 m_distance_voxels[i] = 1.f;
-//             } else {
-//                 float minDistance = dimX * dimY * dimZ;
-//                 for (int j = 0; j < m_voxels.size(); j++) {
-//                     if (i != j && !m_voxels[j]) {
-//                         int x_prime, y_prime, z_prime;
-//                         voxelToIndices(j, x_prime, y_prime, z_prime);
-//                         float currDistance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
-//                         if (currDistance < minDistance) {
-//                             minDistance = currDistance;
-//                         }
-//                     }
-//                 }
-//                 if (x + 1 < minDistance) {
-//                     minDistance = x + 1;
-//                 }
-//                 if (y + 1 < minDistance) {
-//                     minDistance = y + 1;
-//                 }
-//                 if (y + 1 < minDistance) {
-//                     minDistance = z + 1;
-//                 }
-//                 if (dimX - x < minDistance) {
-//                     minDistance = dimX - x;
-//                 }
-//                 if (dimY - y < minDistance) {
-//                     minDistance = dimY - y;
-//                 }
-//                 if (dimZ - z < minDistance) {
-//                     minDistance = dimZ - z;
-//                 }
-//                 m_distance_voxels[i] = minDistance;
-//             }
-
-//         }
-//     }
-// }
 
 void Bread::distanceVoxels() {
     m_distance_voxels.resize(m_voxels.size(), std::numeric_limits<float>::max());
@@ -423,11 +290,6 @@ void Bread::addPadding(int paddingAmt) {
 }
 
 void Bread::voxelToIndices(int index, int &x, int &y, int &z) {
-    // x = index % (dimX * dimZ);
-    // index -= x * dimX * dimZ;
-    // z = index % dimZ;
-    // y = index - z * dimZ;
-
     int a = dimX * dimY;
     z = index / a;
 
@@ -471,8 +333,6 @@ bool Bread::voxelAt(int x, int y, int z) {
 }
 
 void Bread::generateSphere(int x, int y, int z, int radius) {
-    // get bounding box of size 2R + 1 in each dimension and store in vector
-    // iterate through vector and check distance; if distance is < radius, set voxel == 0
     std::vector<float> boundingBox;
     int boundingBoxWidth = 2 * radius + 1;
     boundingBox.assign(pow(boundingBoxWidth, 3), 0);
@@ -487,44 +347,33 @@ void Bread::generateSphere(int x, int y, int z, int radius) {
                 int y_prime = y + j;
                 int z_prime = z + k;
 
-                // bounds checking. TODO check: >= or > dimD depends on how dims are parsed. TODO: verify
                 if (x_prime < 0 || x_prime >= dimX || y_prime < 0 || y_prime >= dimY || z_prime < 0 || z_prime >= dimZ) {
                     continue;
                 }
 
                 indicesToVoxel(x_prime, y_prime, z_prime, idx);
 
-                // sanity bounds check. TODO: verify
                 if (idx < 0 || idx > m_voxels.size()) {
                     continue;
                 }
 
                 float distance = sqrt(std::pow(x - x_prime, 2) + std::pow(y - y_prime, 2) + std::pow(z - z_prime, 2));
-                // m_voxels[idx] = 1;
-
-                // std::cout << distance << std::endl; // uncomment for checking that distance calculations are correct
-                // add some padding around the crust
                 if (distance <= radius && m_distance_voxels[idx] >= m_crust_thickness) {
                     m_voxels[idx] = 0;
-                    // modify P
                     m_P[idx] = std::max(m_P[idx], radius);
                     count++;
-                } else {
-                    // m_voxels[idx] = 1; // TODO: prob can get rid of this since we want to maintain original mesh binary status; this is just for initial checking.
                 }
             }
         }
     }
-
-    // std::cout << "count: " << count << std::endl; // uncomment to check that we're subtracting the correct number of voxels for a given sphere
 }
 
-// use min of 2 and max of 20 for baguette setting
+// Use min of 2 and max of 20 here for baguette setting
 void Bread::generateBubbles(int minRadius, int maxRadius) {
     int radius = minRadius;
 
     while (radius <= maxRadius) {
-        // subtract spheres of minRadius
+        // Subtract spheres of minRadius:
         m_frame++;
         std::vector<bool> voxelCopy = m_voxels;
         for (int i = 0; i < m_voxels.size(); i++) {
@@ -539,18 +388,15 @@ void Bread::generateBubbles(int minRadius, int maxRadius) {
         writeBinvox("128-original-" + std::to_string(m_frame) + ".binvox", dimX, dimY, dimZ, voxelCopy, translateX, translateY, translateZ, scale);
 
         int numSpheres = k / pow(radius, d);
-        std::cout << "numSpheres: " << numSpheres << std::endl;
         for (int i = 0; i < numSpheres; i++) {
-            // generate random coord inside dims
+            // Generate random coord inside dims:
             int x = arc4random_uniform(dimX);
             int y = arc4random_uniform(dimY);
             int z = arc4random_uniform(dimZ);
             generateSphere(x, y, z, radius);
         }
-        // increment
+        // Increment:
         radius++;
-
-
     }
 }
 
@@ -573,10 +419,6 @@ void Bread::fillIn() {
                             for (int w = startZ + 1; w < z; w++) {
                                 int index;
                                 indicesToVoxel(x, y, w, index);
-                                bool zz = m_voxels[index];
-                                if (m_voxels[index] == 0) {
-                                   // cout << "filling in" << endl;
-                                }
                                 m_voxels[index] = 1;
                             }
                         }
@@ -586,30 +428,26 @@ void Bread::fillIn() {
         }
     }
 }
-//iterates over every distance for each time step, stores results in temperatures vector
+
+// Iterates over every distance for each time step, stores results in temperatures vector
 void Bread::bake(int time){
 
-    //hr, hc
-
-    double hc = 0.5; //heat transfer coefficient for convection
-
+    double hc = 0.5; // heat transfer coefficient for convection
     double sigma = 5.670374419e-8;
-    double temp_air = 483.150; //temp in air
-    double temp_surface = m_temperatures[0]; //starting temp at the surface of the dough
-    double temp_radial = 2.0 * temp_air; //temp at heat source
+    double temp_air = 483.150; // temp in air
+    double temp_surface = m_temperatures[0]; // starting temp at the surface of the dough
+    double temp_radial = 2.0 * temp_air; // temp at heat source
     double emissivity_product = 0.9;
-    double emissivity_radial = 0.5; //tbh not sure but it's based on the this website and the common wire heating element in an oven of a nickel-copper mix
-                                    //https://www.flukeprocessinstruments.com/en-us/service-and-support/knowledge-center/infrared-technology/emissivity-metals
-
-    double asp = 0.1; //length of the sample
-    double bsp = 0.2; //width of the sample
-    double lsp = 0.5; //distance between radial source and sample, TODO: from distance mapping
+    double emissivity_radial = 0.5;
+    double asp = 0.1; // length of the sample
+    double bsp = 0.2; // width of the sample
+    double lsp = 0.5; // distance between radial source and sample
     double a = asp / lsp;
     double b = bsp / lsp;
     double a1 = 1.0 + pow(a, 2);
     double b1 = 1.0 + pow(b, 2);
 
-    //shape factor, compares shape of bread to shape of radial source
+    // shape factor; compares shape of bread to shape of radial source
     double fsp = (2.0 / (M_PI * a * b)) * (
                     std::log( sqrt((a1 * b1) / (1.0 + pow(a, 2) + pow(b, 2)))) +
                     (a * sqrt(b1) * std::atan(a / sqrt(b1))) +
@@ -617,28 +455,28 @@ void Bread::bake(int time){
                     (a * std::atan(a)) - (b * std::atan(b))
                     );
 
-    //heat transfer coefficient for radiation
+    // heat transfer coefficient for radiation
     double hr = (sigma * (pow(temp_radial, 2) + pow(temp_surface, 2)) * (temp_radial + temp_surface)) /
                ((1.0 / emissivity_product) + (1.0 / emissivity_radial) - 2.0 + (1.0 / fsp));
 
     double k = 0.5; // thermal conductivity
-    double lambda = 2.257; //latent heat of evaporation/vaporization of water (like how much heat is needs for a phase change i think)
-    double diffusivity = 1.35e-10; //liquid water diffusivity (inversely proportoinal to viscosity, basically how easily it mixes with other stuff)
-    double specific_heat = 3500.0; //amount of heat required to increase the temperature of a specific material by one degree
+    double lambda = 2.257; // latent heat of evaporation/vaporization of water
+    double diffusivity = 1.35e-10; // liquid water diffusivity
+    double specific_heat = 3500.0; // amount of heat required to increase the temperature of a specific material by one degree
 
     double distance = 0.005;
 
-    double w_air = 0.0; // paper says this is 0 but I expect that would change over time??
+    double w_air = 0.0;
 
-    std::vector<double> dtdt(m_temperatures.size(), 0.0); //change in temperature over time
-    std::vector<double> dtdx(m_temperatures.size(), 0.0); //change in temperature over distance
-    std::vector<double> dtdx2(m_temperatures.size(), 0.0); //change in roc of temprature over distance
+    std::vector<double> dtdt(m_temperatures.size(), 0.0); // change in temperature over time
+    std::vector<double> dtdx(m_temperatures.size(), 0.0); // change in temperature over distance
+    std::vector<double> dtdx2(m_temperatures.size(), 0.0); // change in roc of temprature over distance
 
     std::vector<double> dWdt(m_temperatures.size(), 0.0); // change in water diffusion over t
     std::vector<double> dWdx(m_temperatures.size(), 0.0); // change in water diffusion over x
     std::vector<double> dWdx2(m_temperatures.size(), 0.0); // derivative of dWdx
 
-    // fill in dWdx
+    // Fill in dWdx:
     double h_w = 0.00140 * m_temperatures[0] + 0.27 * m_W[0] - 0.0004 * m_temperatures[0] * m_W[0] - 0.77 * m_W[0] * m_W[0];
     dWdx[0] = h_w * (m_W[0] - w_air);
     dWdx[m_W.size() - 1] = 0.f;
@@ -647,16 +485,16 @@ void Bread::bake(int time){
         if (x == 0 || x == m_W.size() - 1) {
             continue;
         }
-        dWdx[x] = (m_W[x+1] - m_W[x-1]) / (distance * 2.0); // avg rate of change
+        dWdx[x] = (m_W[x+1] - m_W[x-1]) / (distance * 2.0);
     }
 
-    // fill in dWdx2
+    // Fill in dWdx2:
     for (int x = 0; x < m_W.size(); x++) {
         if (x == 0 || x == m_W.size() - 1) {
-            if(x == 0){ // outside edge of the bread
+            if (x == 0) {
                 dWdx2[x] = (dWdx[1] - dWdx[0]) / distance;
 
-            } else if(x == m_temperatures.size() - 1){ // inside edge of the bread
+            } else if (x == m_temperatures.size() - 1) {
                 dWdx2[x] = (dWdx[x] - dWdx[x - 1]) / distance;
             }
         } else {
@@ -664,42 +502,42 @@ void Bread::bake(int time){
         }
     }
 
-    // fill in dWdt
+    // Fill in dWdt:
     for (int x = 0; x < m_W.size(); x++) {
         dWdt[x] = diffusivity * dWdx2[x];
     }
 
-    // timestep forward
+    // Timestep forward:
     for (int x = 0; x < m_W.size(); x++) {
-        // explicit euler for now
         m_W[x] += timestep * dWdt[x];
     }
 
     m_W[0] = m_W[1] - distance * dWdx[0];
     m_W[m_W.size() - 1] = m_W[m_W.size() - 2];
 
-    //fill up dtdx
+    // Fill in dtdx:
     for(int x = 0; x < m_temperatures.size(); x++){
-        if(x == m_temperatures.size() - 1){ //inside edge of the bread
+        if (x == m_temperatures.size() - 1) {
             dtdx[x] = 0.0;
-        } else if(x == 0){ //outside edge of the bread
+        } else if (x == 0) {
             dtdx[x] = ((hr * (temp_radial - temp_surface)) + (hc * (temp_air - temp_surface)) - (lambda * m_p[x] * diffusivity * (dWdx[0]))) / (-k);
-        } else { //every other internal point in the bread
+        } else {
             dtdx[x] = (m_temperatures[x + 1] - m_temperatures[x - 1]) / (distance * 2.0);
         }
     }
 
+    // Fill in dtdx2:
     for(int x = 0; x < dtdx2.size(); x++){
-        if(x == 0){ //outside edge of the bread
+        if(x == 0){
             dtdx2[x] = (dtdx[1] - dtdx[0]) / distance;
-        } else if(x == m_temperatures.size() - 1){ //inside edge of the bread
+        } else if (x == m_temperatures.size() - 1) {
             dtdx2[x] = (dtdx[x] - dtdx[x - 1]) / distance;
-        } else { //every other internal point in the bread
+        } else {
             dtdx2[x] = (dtdx[x + 1] - dtdx[x - 1]) / (distance * 2.0);
         }
     }
 
-    // fill up dtdt
+    // Fill in dtdt:
     for (int x = 0; x < dtdt.size(); x++) {
         double new_p = 170.0 + (284.0 * m_W[x]);
         double dpdt = (new_p - m_p[x]) / distance;
@@ -707,24 +545,24 @@ void Bread::bake(int time){
         dtdt[x] = (k * dtdx2[x]) / (new_p * specific_heat) + (lambda * dWdt[x]) / specific_heat + (lambda * m_W[x] * dpdt) / (new_p * specific_heat);
     }
 
-    // update m_temperatures
+    // Update m_temperatures:
     for (int x = 0; x < m_temperatures.size(); x++) {
         m_temperatures[x] += timestep * dtdt[x];
     }
 
-    //create crust
+    // Create crust:
     createCrust(time, dWdt);
 }
 
 void Bread::initBake() {
-    // fill m_W
+    // Fill m_W:
     m_W.assign(m_temperatures.size(), 0.4);
 
-    // fill m_p
+    // Fill m_p:
     m_p.reserve(m_temperatures.size());
     m_p.assign(m_temperatures.size(), 285.0);
 
-    // fill m_L
+    // Fill m_L:
     m_L.assign(m_distance_voxels.size(), 96.f);
 
 }
@@ -732,21 +570,16 @@ void Bread::initBake() {
 void Bread::initTemperatures(){
 
     float largest = *std::max_element(m_distance_voxels.begin(), m_distance_voxels.end());
-    // float largest = 12;
-    cout << largest << endl;
     m_temperatures.resize(int(largest));
-    m_temperatures.assign(int(largest), 298.0); //23 degrees celsius for every location
+    m_temperatures.assign(int(largest), 298.0);
 
     std::vector<float> m_L(m_temperatures.size(), 90.f);
     crust_time = 0.f;
 }
 
 void Bread::fillTemps() {
-    cout << "temp 0 " << m_temperatures[0] << endl;
     for (int i = 0; i < m_voxels.size(); i++) {
         if (m_distance_voxels[i] <= m_crust_thickness) {
-            // cout << "dist " << m_distance_voxels[i] << endl;
-            // cout << "hello " << endl;
             m_3d_temperatures[i] = static_cast<float>(m_temperatures[0]);
         } else {
             int dist = static_cast<int>(m_distance_voxels[i]);
@@ -768,7 +601,6 @@ void Bread::heatMap() {
            if (dist > 0.f) {
                int idx = dist - 1;
                row.push_back(m_temperatures[idx] - 273.15);
-               cout << idx << endl;
            } else {
                row.push_back(145.0);
            }
@@ -778,15 +610,12 @@ void Bread::heatMap() {
            // } else {
            //     row.push_back(0.0);
            // }
-
        }
        data.push_back(row);
    }
 
-
    cv::Mat mat(rows, cols, CV_32F);
 
-   // Normalize data and fill matrix
    for (int i = 0; i < rows; ++i)
        for (int j = 0; j < cols; ++j)
            mat.at<float>(i, j) = data[i][j];
@@ -796,67 +625,50 @@ void Bread::heatMap() {
    normalized.convertTo(normalized, CV_8U);
 
    cv::Mat colorMap;
-   cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);  // Choose any OpenCV colormap
+   cv::applyColorMap(normalized, colorMap, cv::COLORMAP_JET);
    cv::imshow("Heatmap", colorMap);
    cv::waitKey(0);
 }
 
 void Bread::createCrust(int time, std::vector<double> dWdt){
 
-    //has to change based on time step, relationship between num voxels of mesh and time step for thickness, certain percentage of crust based on timestep
-    double crust_thickness = dimX * time * (0.03125 / bakingIterations); //not sure which dim this should be or if it should be an average / different for all dims
-    //ok so this is based on me estimating one of the images that shows the crust thickness is 3.125% of the number of voxels when fully baked
+    // Has to change based on time step, relationship between num voxels of mesh and time step for thickness, certain percentage of crust based on timestep:
+    double crust_thickness = dimX * time * (0.03125 / bakingIterations);
 
-    // a* [4.5e1.5] and b* [22.6e45.9]
-    std::cout << crust_thickness << std::endl;
 
-    std::vector<std::vector<float>> rgb_colors; //L, lightness of color, 0-100 of black-white, ours will be 90-40 as unbaked-burnt;
-        //channel 2 is positoin a between red and green (-120-+120);
-        //chnanel 3 is position b between yellow and blue (-120-+120)
+    std::vector<std::vector<float>> rgb_colors; // L, lightness of color, 0-100 of black-white, ours will be 90-40 as unbaked-burnt;
+        // Channel 2 is positoin a between red and green (-120-+120);
+        // Channel 3 is position b between yellow and blue (-120-+120)
 
     bool addToCrust = true;
 
-
     for(int i = 0; i < m_distance_voxels.size(); i++){
 
-        // std::cout << "distance i: " << m_distance_voxels[i] << ", crust thickness: " << crust_thickness << ", temp at this distance: " << m_temperatures[std::floor((m_distance_voxels[i]))] << ", dwdt at i: " << dWdt[i] << std::endl;
-
-        //voxel that is within crust distance, has a temp > 120C/393.15K, and has water activity < 0.6 //increasing temperature decreases water activity
+        // Voxel that is within crust distance, has a temp > 120C/393.15K, and has water activity < 0.6 -- increasing temperature decreases water activity:
         if(m_distance_voxels[i] < crust_thickness && m_distance_voxels[i] != 0 && m_temperatures[std::floor((m_distance_voxels[i]))] > 390.f && dWdt[i] < 0.6f){
 
             if (addToCrust) {
                 crust_time ++;
                 addToCrust = false;
             }
-            //how long have we been updating the crust color, hopefuly goes for about 20 iterations
 
             double t1 = std::pow(7.923310f, 6.f);
             float water_activity = m_W[m_distance_voxels[i]];
             double t2 = (std::pow(2.739710f, 6.f) / water_activity);
-            double temp1 = t1 + t2; //water_acticity ranges from 0.1 to 0.6
-            double temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / water_activity)) / (m_temperatures[0])); //temp at this voxel at this time
+            double temp1 = t1 + t2;
+            double temp2 = -1 * ((std::pow(8.701510, 3) + (49.4738 / water_activity)) / (m_temperatures[0]));
             double k = temp1 * std::pow(M_E, temp2);
             k -= 34000;
             k /= 10000;
-            m_L[i] += -k * m_L[i] * timestep / 60.f; //decrements
+            m_L[i] += -k * m_L[i] * timestep / 60.f;
 
             float a = -4.5f + (.75 * crust_time);
             float b = 22.6 + (2.9f * crust_time);
 
-            // std::cout << k << std::endl;
-            std::cout << m_L[i] << " " << a << " " << b << std::endl;
             std::vector<float> temp = labToRgb({m_L[i], a, b});
             rgb_colors.push_back({(float)i, temp[0], temp[1], temp[2]});
         }
-
     }
-    // std::cout << crust_time << std::endl;
-
-    // std::cout << "color size: " << rgb_colors.size() << std::endl;
-    for(int i = 0; i < rgb_colors.size(); i++){
-        // std::cout << "L: " << rgb_colors[i][1] << ", a: " << rgb_colors[i][2] << ", b: " << rgb_colors[i][3] << std::endl;
-    }
-
 }
 
 std::vector<float> Bread::labToRgb(std::vector<float> color){
