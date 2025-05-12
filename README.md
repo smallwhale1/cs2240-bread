@@ -1,6 +1,6 @@
 # Bread 🥖
 
-**Team:** Live Laugh Loaf
+**Team:** Live Laugh Loaf <br>
 **Members:**
 `Grace Marshburn` `Lana Yang-Maccini` `Sophie Zhang` `Tiffany Huang`
 
