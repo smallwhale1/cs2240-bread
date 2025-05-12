@@ -204,17 +204,19 @@ void Bread::distanceVoxels() {
                 }
 
                 bool isSurface = false;
-                for (int dx = -1; dx <= 1 && !isSurface; ++dx) {
-                    for (int dy = -1; dy <= 1 && !isSurface; ++dy) {
-                        for (int dz = -1; dz <= 1 && !isSurface; ++dz) {
-                            if (dx == 0 && dy == 0 && dz == 0) continue;
-                            int nx = x + dx;
-                            int ny = y + dy;
-                            int nz = z + dz;
-                            if (nx < 0 || ny < 0 || nz < 0 || nx >= dimX || ny >= dimY || nz >= dimZ)
+                for (int dx = -1; dx <= 1 && !isSurface; dx++) {
+                    for (int dy = -1; dy <= 1 && !isSurface; dy++) {
+                        for (int dz = -1; dz <= 1 && !isSurface; dz++) {
+                            if (dx == 0 && dy == 0 && dz == 0) {
+                                continue;
+                            }
+                            int nextX = x + dx;
+                            int nextY = y + dy;
+                            int nextZ = z + dz;
+                            if (nextX < 0 || nextY < 0 || nextZ < 0 || nextX >= dimX || nextY >= dimY || nextZ >= dimZ)
                                 continue;
                             int nIdx;
-                            indicesToVoxel(nx, ny, nz, nIdx);
+                            indicesToVoxel(nextX, nextY, nextZ, nIdx);
                             if (!m_voxels[nIdx]) {
                                 isSurface = true;
                                 m_distance_voxels[idx] = 1.f;
@@ -239,16 +241,17 @@ void Bread::distanceVoxels() {
         float currDist = m_distance_voxels[currIdx];
 
         for (int i = 0; i < 6; ++i) {
-            int nx = x + dx[i];
-            int ny = y + dy[i];
-            int nz = z + dz[i];
-            if (nx < 0 || ny < 0 || nz < 0 || nx >= dimX || ny >= dimY || nz >= dimZ)
+            int nextX = x + dx[i];
+            int nextY = y + dy[i];
+            int nextZ = z + dz[i];
+            if (nextX < 0 || nextY < 0 || nextZ < 0 || nextX >= dimX || nextY >= dimY || nextZ >= dimZ) {
                 continue;
+            }
             int nIdx;
-            indicesToVoxel(nx, ny, nz, nIdx);
+            indicesToVoxel(nextX, nextY, nextZ, nIdx);
             if (m_voxels[nIdx] && m_distance_voxels[nIdx] > currDist + 1) {
                 m_distance_voxels[nIdx] = currDist + 1;
-                q.emplace(nx, ny, nz);
+                q.emplace(nextX, nextY, nextZ);
             }
         }
     }

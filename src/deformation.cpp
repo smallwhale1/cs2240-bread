@@ -367,14 +367,16 @@ std::vector<bool> Bread::rise(std::vector<Vector3f> grad, std::vector<bool> inpu
 
                 if (xyzX < 0 || xyzX >= dimX ||
                     xyzY < 0 || xyzY >= dimY ||
-                    xyzZ < 0 || xyzZ >= dimZ)
+                    xyzZ < 0 || xyzZ >= dimZ) {
                     continue;
+                }
 
                 int newIndex;
                 indicesToVoxel(xyzX, xyzY, xyzZ, newIndex);
 
-                if (newIndex < 0 || newIndex >= m_voxels.size())
+                if (newIndex < 0 || newIndex >= m_voxels.size()) {
                     continue;
+                }
 
                 // deformedVoxels[originalInd] = inputVec[newIndex];
                 // float sample = trilinearSampleVoxel(xyzX, xyzY, xyzZ, inputVec);
