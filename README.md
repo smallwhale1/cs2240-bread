@@ -15,6 +15,8 @@ Rodrigo Baravalle, Gustavo Ariel Patow, and Claudio Delrieux
 
 ![Bread Rising Animation](outputs-sop/bread-rise-gif.gif) _Visualization of bread baking (deforming and rising) over time._
 
+![Bread Cross Section Animation](outputs-sop/bread-cross-gif.gif) _Bread at different cross sections during bubble generation and baking._
+
 ## Slides
 
 Link to [slides](https://docs.google.com/presentation/d/14CjRwywVD9sJbUnkicvNXF9Ry3lyDxicRIO2Aa5_eR0/edit?usp=sharing).
