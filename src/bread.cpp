@@ -16,7 +16,6 @@
 
 using namespace std;
 
-
 Bread::Bread() {
 }
 
@@ -913,7 +912,6 @@ void Bread::saveOBJ(const string& filename, const vector<Vector3f>& vertices, co
                 num_closest = j;
             }
         }
-
         vertex_to_voxel[i] = num_closest;
     }
 
