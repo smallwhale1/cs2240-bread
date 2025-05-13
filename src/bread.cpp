@@ -224,9 +224,7 @@ void Bread::init() {
     //     }
     // }
 
-<<<<<<< Updated upstream
     // writeBinvox("128-rise.binvox", dimX, dimY, dimZ, risen, translateX, translateY, translateZ, scale);
-=======
     warpBubbles(m_gradVector);
     rise(m_gradVector);
 
@@ -254,7 +252,6 @@ void Bread::init() {
     saveOBJ("bread.obj", outVertices, triangles);
     saveMTL();
     cout << "done!" << endl;
->>>>>>> Stashed changes
 }
 
 void Bread::saveP(const std::string& filepath) {
