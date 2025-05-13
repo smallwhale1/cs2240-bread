@@ -21,6 +21,8 @@ Rodrigo Baravalle, Gustavo Ariel Patow, and Claudio Delrieux
 
 ![Bread Cross Section Animation](outputs-sop/bread-cross-gif.gif) _Bread at different cross sections during bubble generation and baking._
 
+![Crust Rendering](outputs-sop/crust-render.png) _Rendering with crust. \*Unfortunately, were were not able to fully resolve transferring crust to obj/mtl files due to voxel-surface mesh complications, but here is our progress._
+
 ## Slides
 
 Link to [slides](https://docs.google.com/presentation/d/14CjRwywVD9sJbUnkicvNXF9Ry3lyDxicRIO2Aa5_eR0/edit?usp=sharing).
