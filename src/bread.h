@@ -13,14 +13,49 @@ public:
     void init();
 
 private:
+
+    // baguette
+    int r = 128; // resolution of proving vol in each spatial coordinate
+    float k = 0.06 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
+    float d = 1.63f; // fractal exponent for likelihood of spheres given radii
+
+    // sandwich
+    // int r = 190;
+    // float k = 0.27 * pow(r, 3) * 0.05;
+    // float d = 3.f;
+
+    // sourdough
+    // float k = 0.075 * pow(r, 3) * 0.05;
+    // int r = 164
+    // float d = 1.6
+
+    // initialization
     int m_frame = 0;
-    std::vector<bool> m_voxels;
     int dimX, dimY, dimZ;
     float translateX = 0.f;
     float translateY = 0.f;
     float translateZ = 0.f;
     float scale = 1.f;
+    std::vector<bool> m_voxels;
     std::vector<float> m_distance_voxels;
+
+
+
+
+
+
+
+
+    // temperature deformation
+    float p = 3.0;
+
+    // rising
+    float S = 1.1;
+    float S_y = 1.2;
+    float S_change = S - 1.f;
+    float S_change_y = S_y - 1.f;
+    int m_crust_thickness = 3;
+
     bool voxelAt(int x, int y, int z);
     void distanceVoxels();
     void voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ);
@@ -30,39 +65,13 @@ private:
     void generateBubbles(int minRadius, int maxRadius);
     void fillIn();
     void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
-
     void saveDistanceVoxels(const std::string& filepath);
     void loadDistanceVoxels(const std::string& filepath);
-
     void saveP(const std::string& filepath);
     void loadP(const std::string& filepath);
 
     // bubble gen
-    // DEFAULT BAGUETTE
-    int r = 128; // resolution of proving vol in each spatial coordinate
-    float k = 0.06 * pow(r, 3) * 0.05; // the amount of actual spheres at each radius
-    float d = 1.63f; // fractal exponent for likelihood of spheres given radii
 
-    // SANDWICH
-    // int r = 190;
-    // float k = 0.27 * pow(r, 3) * 0.05;
-    // float d = 3.f;
-
-    // SOURDOUGH
-    // float k = 0.075 * pow(r, 3) * 0.05;
-    // int r = 164
-    // float d = 1.6
-
-    // parameters
-    // temperature deformation
-    float p = 3.0;
-    // rising
-    float S = 1.1;
-    float S_y = 1.2;
-    float S_change = S - 1.f;
-    float S_change_y = S_y - 1.f;
-
-    int m_crust_thickness = 3;
 
     // deformation
     std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);
@@ -81,7 +90,7 @@ private:
 
     std::vector<float> m_3d_temperatures;
 
-    int m_filterRadius = 1; // change radius of filter
+    int m_filterRadius = 1;
     std::vector<float> m_gaussianKernel;
     std::vector<Eigen::Vector3f> m_gradVector;
 
@@ -95,11 +104,23 @@ private:
     std::vector<float> m_L;
     float crust_time;
     void createCrust(int time, std::vector<double> dWdt);
-    std::vector<float> labToRgb(std::vector<float> color);
-    std::vector<std::vector<double>> rgb_colors; //L, lightness of color, 0-100 of black-white, ours will be 90-40 as unbaked-burnt;
+    std::vector<float> labToRgb(float L, float A, float B);
+    std::vector<std::vector<double>> rgb_colors;
 
     void saveMTL();
     void saveJPG();
+
+    void addPadding(int paddingAmt);
+    std::vector<double> m_temperatures;
+    std::vector<double> m_W;
+    std::vector<double> m_p;
+    double timestep = 30.0;
+    int bakingIterations = 100;
+    void initTemperatures();
+    void bake(int time);
+    void initBake();
+    float prevDensity;
+    void heatMap();
 
     const int edgeTable[256] =
         {
@@ -396,17 +417,6 @@ private:
             {0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
     };
-    void addPadding(int paddingAmt);
-    std::vector<double> m_temperatures;
-    std::vector<double> m_W;
-    std::vector<double> m_p;
-    double timestep = 30.0;
-    int bakingIterations = 100;
-    void initTemperatures();
-    void bake(int time);
-    void initBake();
-    float prevDensity;
-    void heatMap();
 };
 
 #endif // BREAD_H
