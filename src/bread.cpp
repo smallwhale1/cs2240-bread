@@ -136,6 +136,13 @@ void Bread::init() {
 
     // To show heat map
     // heatMap();
+
+    // Saving crust:
+    saveJPG();
+    vector<Triangle> triangles;
+    marchingCubes(m_voxels, dimX, dimY, dimZ, outVertices, triangles, edgeTable, triangleTable);
+    saveOBJ("bread.obj", outVertices, triangles);
+    saveMTL();
 }
 
 void Bread::saveP(const std::string& filepath) {
@@ -691,8 +698,8 @@ std::vector<float> Bread::labToRgb(float L, float A, float B){
     float b = x *  0.0557f + y * -0.2040f + z *  1.0570f;
 
     r = (r > 0.0031308f) ? (1.055f * std::pow(r, 1 / 2.4f) - 0.055f) : (12.92f * r);
-    g = (g > 0.0031308f) ? (1.055f * std::pow(g, 1 / 2.4f) - 0.055f) : (12.92f * g); //r?
-    b = (b > 0.0031308f) ? (1.055f * std::pow(b, 1 / 2.4f) - 0.055f) : (12.92f * b); //r?
+    g = (g > 0.0031308f) ? (1.055f * std::pow(g, 1 / 2.4f) - 0.055f) : (12.92f * g);
+    b = (b > 0.0031308f) ? (1.055f * std::pow(b, 1 / 2.4f) - 0.055f) : (12.92f * b);
 
     r = std::clamp(r, 0.f, 1.f);
     g = std::clamp(g, 0.f, 1.f);
@@ -724,7 +731,7 @@ void Bread::saveMTL(){
 
 void Bread::saveJPG(){
 
-    // maps distance to color
+    // Maps distance to color:
     std::map<double, std::vector<double>> rgb_dict;
     for(int i = 0; i < rgb_colors.size(); i++){
         rgb_dict[rgb_colors[i][0]] = {rgb_colors[i][1], rgb_colors[i][2], rgb_colors[i][3]};
@@ -743,9 +750,9 @@ void Bread::saveJPG(){
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
 
-            image.at<cv::Vec3b>(y, x)[2] = rgb_values[y][0]; //red
-            image.at<cv::Vec3b>(y, x)[1] = rgb_values[y][1]; //green
-            image.at<cv::Vec3b>(y, x)[0] = rgb_values[y][2]; //blue
+            image.at<cv::Vec3b>(y, x)[2] = rgb_values[y][0]; // red
+            image.at<cv::Vec3b>(y, x)[1] = rgb_values[y][1]; // green
+            image.at<cv::Vec3b>(y, x)[0] = rgb_values[y][2]; // blue
 
         }
     }
