@@ -874,7 +874,7 @@ void Bread::saveOBJ(const string& filename, const vector<Vector3f>& vertices, co
     int num_coords = rgb_dict.size();
 
     for(int i = 0; i < num_coords; i++){
-        file << "vt 0.000 " << (float)num_coords << " 0.000\n";
+        file << "vt 0.000 " << (float)(i+1) << " 0.000\n";
     }
     file << "# " << num_coords << " texture coords\n";
     file << "\n";
@@ -921,12 +921,9 @@ void Bread::saveOBJ(const string& filename, const vector<Vector3f>& vertices, co
         int curr_voxel_1 = vertex_to_voxel[t.v1];
         int curr_voxel_2 = vertex_to_voxel[t.v2];
 
-        int coord0 = floor(m_distance_voxels[curr_voxel_0]) / num_coords;
-        coord0 = floor(coord0);
-        int coord1 = floor(m_distance_voxels[curr_voxel_1]) / num_coords;
-        coord1 = floor(coord1);
-        int coord2 = floor(m_distance_voxels[curr_voxel_2]) / num_coords;
-        coord2 = floor(coord2);
+        int coord0 = floor(m_distance_voxels[curr_voxel_0]) + 1 / num_coords;
+        int coord1 = floor(m_distance_voxels[curr_voxel_1]) + 1 / num_coords;
+        int coord2 = floor(m_distance_voxels[curr_voxel_2]) + 1 / num_coords;
 
         file << "f "
              << (t.v0 + 1) << "/" << coord0 << " "
