@@ -26,6 +26,10 @@ find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
 find_package(Qt6 REQUIRED COMPONENTS Gui)
 find_package(OpenCV REQUIRED)
 
+message(STATUS "OpenCV_LIBS: ${OpenCV_LIBS}")
+message(STATUS "OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
+
+
 # Allows you to include files from within those directories, without prefixing their filepaths
 include_directories(src)
 include_directories(libs)
@@ -66,6 +70,7 @@ add_executable(${PROJECT_NAME}
 # GLEW: this creates its library and allows you to `#include "GL/glew.h"`
 add_library(StaticGLEW STATIC glew/src/glew.c)
 include_directories(${PROJECT_NAME} PRIVATE glew/include)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Specifies libraries to be linked (Qt components, glew, etc)
 target_link_libraries(${PROJECT_NAME} PRIVATE

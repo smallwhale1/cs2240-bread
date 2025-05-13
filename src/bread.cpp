@@ -128,6 +128,7 @@ void Bread::init() {
             if (z > dimZ / 48 * m_frame) {
                 risen[j] = 0;
             }
+
         }
 
         std::string filename = "128-rise-" + std::to_string(m_frame) + ".binvox";
@@ -564,9 +565,7 @@ void Bread::initBake() {
     // Fill m_p:
     m_p.reserve(m_temperatures.size());
     m_p.assign(m_temperatures.size(), 285.0);
-
-    // Fill m_L:
-    m_L.assign(m_distance_voxels.size(), 96.f);
+    m_L.assign(m_distance_voxels.size(), 90.f);
 
 }
 
@@ -644,6 +643,10 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
         // Channel 3 is position b between yellow and blue (-120-+120)
 
     bool addToCrust = true;
+    rgb_colors.clear();
+        //channel 2 is positoin a between red and green (-120-+120);
+        //chnanel 3 is position b between yellow and blue (-120-+120)
+
 
     for(int i = 0; i < m_distance_voxels.size(); i++){
 
@@ -669,7 +672,7 @@ void Bread::createCrust(int time, std::vector<double> dWdt){
             float b = 22.6 + (2.9f * crust_time);
 
             std::vector<float> temp = labToRgb({m_L[i], a, b});
-            rgb_colors.push_back({(float)i, temp[0], temp[1], temp[2]});
+            rgb_colors.push_back({(float)m_distance_voxels[i], temp[0], temp[1], temp[2]});
         }
     }
 }
@@ -701,8 +704,8 @@ std::vector<float> Bread::labToRgb(std::vector<float> color){
     float b = x *  0.0557f + y * -0.2040f + z *  1.0570f;
 
     r = (r > 0.0031308f) ? (1.055f * std::pow(r, 1 / 2.4f) - 0.055f) : (12.92f * r);
-    r = (g > 0.0031308f) ? (1.055f * std::pow(g, 1 / 2.4f) - 0.055f) : (12.92f * g);
-    r = (b > 0.0031308f) ? (1.055f * std::pow(b, 1 / 2.4f) - 0.055f) : (12.92f * b);
+    g = (g > 0.0031308f) ? (1.055f * std::pow(g, 1 / 2.4f) - 0.055f) : (12.92f * g); //r?
+    b = (b > 0.0031308f) ? (1.055f * std::pow(b, 1 / 2.4f) - 0.055f) : (12.92f * b); //r?
 
     r = std::clamp(r, 0.f, 1.f);
     g = std::clamp(g, 0.f, 1.f);
@@ -710,3 +713,61 @@ std::vector<float> Bread::labToRgb(std::vector<float> color){
 
     return {r, g, b};
 }
+
+
+
+void Bread::saveMTL(){
+
+    ofstream mtlFile("material.mtl"); // Creates or overwrites "material.mtl"
+
+    if (!mtlFile) {
+        throw runtime_error("Failed to create .mtl file!");
+    }
+
+    mtlFile << "newmtl crust\n";
+    mtlFile << "Ka 1.000 1.000 1.000\n"; //ambient color
+    mtlFile << "Kd 1.000 1.000 1.000\n"; //diffuse color (used if no texture is applied)
+    mtlFile << "Ks 0.000 0.000 0.000\n"; //specular color
+    mtlFile << "d 1.0\n"; //opacity (1 = fully opaque)
+    mtlFile << "Ns 10.0\n"; //specular exponent
+    mtlFile << "illum 2\n"; //lighting model (diffuse + specular)
+    mtlFile << "map_Kd crust_color.jpg\n"; //path to the texture image
+
+    mtlFile.close();
+}
+
+void Bread::saveJPG(){
+
+    // maps distance to color
+    std::map<double, std::vector<double>> rgb_dict;
+    for(int i = 0; i < rgb_colors.size(); i++){
+        rgb_dict[rgb_colors[i][0]] = {rgb_colors[i][1], rgb_colors[i][2], rgb_colors[i][3]};
+    }
+
+    int width = rgb_dict.size();
+    int height = rgb_dict.size();
+    std::vector<std::vector<double>> rgb_values;
+
+    for (const auto& pair : rgb_dict) {
+        rgb_values.push_back(pair.second);
+    }
+
+    // Create a 3-channel (BGR) image with 8-bit depth
+    cv::Mat image(height, width, CV_8UC3);
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+
+            image.at<cv::Vec3b>(y, x)[2] = rgb_values[y][0]; //red
+            image.at<cv::Vec3b>(y, x)[1] = rgb_values[y][1]; //green
+            image.at<cv::Vec3b>(y, x)[0] = rgb_values[y][2]; //blue
+
+        }
+    }
+
+    // Save the image as JPEG
+    if (!cv::imwrite("crust_color.jpg", image)) {
+        throw runtime_error("Could not save image\n");
+    }
+}
+

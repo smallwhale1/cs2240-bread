@@ -96,6 +96,10 @@ private:
     float crust_time;
     void createCrust(int time, std::vector<double> dWdt);
     std::vector<float> labToRgb(std::vector<float> color);
+    std::vector<std::vector<double>> rgb_colors; //L, lightness of color, 0-100 of black-white, ours will be 90-40 as unbaked-burnt;
+
+    void saveMTL();
+    void saveJPG();
 
     const int edgeTable[256] =
         {
