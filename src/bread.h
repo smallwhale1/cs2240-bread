@@ -40,18 +40,23 @@ private:
     float translateY = 0.f;
     float translateZ = 0.f;
     float scale = 1.f;
+    double timestep = 30.0;
+    int bakingIterations = 100;
     std::vector<bool> m_voxels;
     std::vector<float> m_distance_voxels;
+    std::vector<double> m_temperatures;
+    std::vector<double> m_W;
+    std::vector<double> m_p;
+    std::vector<float> m_L;
+    std::vector<int> m_P;
+    void distanceVoxels();
+    void initBake();
+    void initTemperatures();
 
-
-
-
-
-
-
-
-    // temperature deformation
-    float p = 3.0;
+    // bubble generation
+    void generateSphere(int x, int y, int z, int radius);
+    void generateBubbles(int minRadius, int maxRadius);
+    void fillIn();
 
     // rising
     float S = 1.1;
@@ -59,89 +64,60 @@ private:
     float S_change = S - 1.f;
     float S_change_y = S_y - 1.f;
     int m_crust_thickness = 3;
+    void addPadding(int paddingAmt);
 
-    bool voxelAt(int x, int y, int z);
-    void distanceVoxels();
-    void voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ);
-    void voxelToIndices(int index, int &x, int &y, int &z);
-    void indicesToVoxel(int x, int y, int z, int &index);
-    void generateSphere(int x, int y, int z, int radius);
-    void generateBubbles(int minRadius, int maxRadius);
-    void fillIn();
-    void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels, float translateX, float translateY, float translateZ, float scale);
+    //temperature change
+    float p = 3.0;
+    void bake(int time);
+
+    // temperature deformation
+    int m_filterRadius = 1;
+    float trilinearSampleVoxel(float x, float y, float z, std::vector<bool>& inputVec);
+    float prevDensity;
+    std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);
+    std::vector<bool> rise(std::vector<Eigen::Vector3f> grad, std::vector<bool> inputVec, float scaleAmt, float scaleAmtY);
+    std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
+    std::vector<float> m_3d_temperatures;
+    std::vector<float> m_mock_temp;
+    std::vector<float> m_temp;
+    std::vector<float> m_gaussianKernel;
+    std::vector<Eigen::Vector3f> m_gradVector;
+    void constructMockTemp();
+    void constructTemp();
+    void convolveGaussian();
+    void generateGaussianFilter();
+    void spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z);
+    void fillTemps();
+
+    // crust
+    float crust_time;
+    void createCrust(int time, std::vector<double> dWdt);
+    double crust_thickness;
+    std::vector<float> labToRgb(float L, float A, float B);
+    std::vector<std::vector<double>> rgb_colors;
+
+    // finishing
+    std::vector<Eigen::Vector3f> outVertices;
+    void writeBinvox(const std::string& filename, int dimX, int dimY, int dimZ, const std::vector<bool>& voxels,
+                     float translateX, float translateY, float translateZ, float scale);
     void saveDistanceVoxels(const std::string& filepath);
     void loadDistanceVoxels(const std::string& filepath);
     void saveP(const std::string& filepath);
     void loadP(const std::string& filepath);
-
-    // bubble gen
-
-
-    // deformation
-    std::vector<bool> warpBubbles(std::vector<Eigen::Vector3f> grad);
-    std::vector<bool> rise(std::vector<Eigen::Vector3f> grad, std::vector<bool> inputVec, float scaleAmt, float scaleAmtY);
-    void constructMockTemp();
-    void constructTemp();
-    std::vector<Eigen::Vector3f> calcGradient(std::vector<float> inputVec);
-    void convolveGaussian();
-    void generateGaussianFilter();
-    float trilinearSampleVoxel(float x, float y, float z, std::vector<bool>& inputVec);
-    void spatialToVoxel(float worldX, float worldY, float worldZ, int &x, int &y, int &z);
-    std::vector<float> m_mock_temp;
-    std::vector<float> m_temp;
-
-    void fillTemps();
-
-    std::vector<float> m_3d_temperatures;
-
-    int m_filterRadius = 1;
-    std::vector<float> m_gaussianKernel;
-    std::vector<Eigen::Vector3f> m_gradVector;
-
-    // rising
-    // stores max bubble radius at a particular voxel
-    std::vector<int> m_P;
-
     void extractVoxelSurfaceToOBJ(const std::vector<bool>& m_voxels, int dimX, int dimY, int dimZ, const std::string& filename);
-    int toIndex(int x, int y, int z, int dimX, int dimY);
-
-    std::vector<float> m_L;
-    float crust_time;
-    void createCrust(int time, std::vector<double> dWdt);
-    std::vector<float> labToRgb(float L, float A, float B);
-    std::vector<std::vector<double>> rgb_colors;
-
     void saveMTL();
     void saveJPG();
-    std::vector<Eigen::Vector3f> outVertices;
-    double crust_thickness;
-
-    void marchingCubes(
-        const std::vector<bool>& voxels,
-        int dimX, int dimY, int dimZ,
-        std::vector<Eigen::Vector3f>& outVertices,
-        std::vector<Triangle>& outTriangles,
-        const int edgeTable[256],
-        const int triTable[256][16]
-        );
-
-    void saveOBJ(
-        const std::string& filename,
-        const std::vector<Eigen::Vector3f>& vertices,
-        const std::vector<Triangle>& triangles
-        );
-
-    void addPadding(int paddingAmt);
-    std::vector<double> m_temperatures;
-    std::vector<double> m_W;
-    std::vector<double> m_p;
-    double timestep = 30.0;
-    int bakingIterations = 100;
-    void initTemperatures();
-    void bake(int time);
-    void initBake();
-    float prevDensity;
+    void marchingCubes(const std::vector<bool>& voxels, int dimX, int dimY, int dimZ, std::vector<Eigen::Vector3f>& outVertices,
+                       std::vector<Triangle>& outTriangles, const int edgeTable[256], const int triTable[256][16]);
+    void saveOBJ(const std::string& filename, const std::vector<Eigen::Vector3f>& vertices, const std::vector<Triangle>& triangles);
     void heatMap();
+
+    // helpers
+    bool voxelAt(int x, int y, int z);
+    void voxelToSpatialCoords(int x, int y, int z, float &worldX, float &worldY, float &worldZ);
+    void voxelToIndices(int index, int &x, int &y, int &z);
+    void indicesToVoxel(int x, int y, int z, int &index);
+    int toIndex(int x, int y, int z, int dimX, int dimY);
 
     const int edgeTable[256] =
         {
